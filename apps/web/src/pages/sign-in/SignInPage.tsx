@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { SignInWithAppleButton } from '@/features/sign-in-apple/SignInWithAppleButton'
 import { SignInWithCodeForm } from '@/features/sign-in-code/SignInWithCodeForm'
 import { SignInWithGoogleButton } from '@/features/sign-in-google/SignInWithGoogleButton'
 import { AuthLayout } from '@/widgets/auth-layout/AuthLayout'
@@ -25,7 +26,10 @@ export function SignInPage() {
       </div>
 
       <div className="mt-8 space-y-4">
-        <SignInWithGoogleButton className="w-full" />
+        <div className="grid grid-cols-2 gap-3">
+          <SignInWithGoogleButton className="w-full" />
+          <SignInWithAppleButton className="w-full" />
+        </div>
 
         <div className="relative text-center text-xs uppercase tracking-widest">
           <div className="absolute inset-0 top-1/2 flex items-center">

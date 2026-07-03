@@ -16,7 +16,12 @@ export function BrandMark({ className, transition, ...rest }: BrandMarkProps) {
   return (
     <motion.div
       layoutId={BRAND_LAYOUT_ID}
-      transition={transition ?? { type: 'spring', stiffness: 260, damping: 26, mass: 0.9 }}
+      transition={
+        transition ?? {
+          layout: { type: 'spring', stiffness: 180, damping: 24, mass: 1.05 },
+          default: { duration: 0.35, ease: 'easeOut' },
+        }
+      }
       className={cn(
         'flex items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20',
         className,

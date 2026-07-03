@@ -11,6 +11,7 @@ import { DataroomsListPage } from '@/pages/datarooms-list/DataroomsListPage'
 import { SignInPage } from '@/pages/sign-in/SignInPage'
 import { SignUpPage } from '@/pages/sign-up/SignUpPage'
 import { SsoCallbackPage } from '@/pages/sso-callback/SsoCallbackPage'
+import { AppShell } from '@/widgets/app-shell/AppShell'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -49,7 +50,9 @@ const authedRoute = createRoute({
   id: 'authed',
   component: () => (
     <RequireAuth>
-      <Outlet />
+      <AppShell>
+        <Outlet />
+      </AppShell>
     </RequireAuth>
   ),
 })

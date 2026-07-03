@@ -3,7 +3,7 @@ import { AnimatePresence, LayoutGroup } from 'motion/react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { SplashScreen } from './SplashScreen'
 
-const MIN_SPLASH_MS = 1200
+const MIN_SPLASH_MS = 900
 
 interface SplashProviderProps {
   children: ReactNode
