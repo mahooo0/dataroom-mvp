@@ -42,20 +42,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    labels:
-      - "traefik.enable=true"
-      # S3 API — browser hits this for presigned uploads/downloads
-      - "traefik.http.routers.dataroom-minio.rule=Host(`${MINIO_HOST}`)"
-      - "traefik.http.routers.dataroom-minio.entrypoints=websecure"
-      - "traefik.http.routers.dataroom-minio.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.dataroom-minio.service=dataroom-minio"
-      - "traefik.http.services.dataroom-minio.loadbalancer.server.port=9000"
-      # Web console — visual debugging (protect with a strong root password)
-      - "traefik.http.routers.dataroom-minio-console.rule=Host(`${MINIO_CONSOLE_HOST}`)"
-      - "traefik.http.routers.dataroom-minio-console.entrypoints=websecure"
-      - "traefik.http.routers.dataroom-minio-console.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.dataroom-minio-console.service=dataroom-minio-console"
-      - "traefik.http.services.dataroom-minio-console.loadbalancer.server.port=9001"
 
   minio-init:
     image: minio/mc:latest
