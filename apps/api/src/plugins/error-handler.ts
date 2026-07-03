@@ -1,10 +1,10 @@
-import { DataroomApiError, errorStatusFor } from '@dataroom/shared'
-import type { FastifyInstance } from 'fastify'
-import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import { DataroomApiError } from '@dataroom/shared'
+import type { FastifyError, FastifyInstance } from 'fastify'
 import fp from 'fastify-plugin'
+import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 
 export const errorHandlerPlugin = fp(async (app: FastifyInstance) => {
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     request.log.error({ err: error }, 'Request failed')
 
     if (error instanceof DataroomApiError) {
@@ -33,6 +33,3 @@ export const errorHandlerPlugin = fp(async (app: FastifyInstance) => {
     })
   })
 })
-
-// re-export not needed helper reference
-export { errorStatusFor }
