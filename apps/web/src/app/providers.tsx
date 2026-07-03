@@ -1,4 +1,5 @@
 import { ClerkProvider } from '@clerk/react'
+import { shadcn } from '@clerk/ui/themes'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { type ReactNode, useEffect, useState } from 'react'
@@ -44,12 +45,7 @@ export function Providers({ children }: ProvidersProps) {
   )
 
   return (
-    <ClerkProvider
-      publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY}
-      appearance={{
-        variables: { colorPrimary: 'oklch(0.205 0 0)', borderRadius: '0.5rem' },
-      }}
-    >
+    <ClerkProvider publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY} appearance={{ theme: shadcn }}>
       <QueryClientProvider client={queryClient}>
         <ThemeSync />
         {children}
