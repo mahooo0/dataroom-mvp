@@ -1,0 +1,55 @@
+name: dataroom-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dataroom
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - dataroom-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d dataroom"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: pgsty/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio-dev
+      MINIO_ROOT_PASSWORD: minio-dev-password
+      MINIO_API_CORS_ALLOW_ORIGIN: "http://localhost:5173,http://localhost:3001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - dataroom-miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minio-dev minio-dev-password;
+      mc mb -p local/dataroom-files || true;
+      mc anonymous set none local/dataroom-files;
+      echo 'MinIO bucket ready';
+      "
+
+volumes:
+  dataroom-pgdata:
+  dataroom-miniodata:

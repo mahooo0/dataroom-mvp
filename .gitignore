@@ -1,0 +1,44 @@
+# Reference material (template we copy UI from, not part of the project)
+.reference/
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+.turbo/
+.tsbuildinfo
+
+# TanStack Router generated routes (if we switch to file-based)
+routeTree.gen.ts
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Docker volumes (local dev)
+docker/volumes/
+
+# Cache
+.eslintcache
