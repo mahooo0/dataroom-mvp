@@ -25,13 +25,11 @@ export function SignInPage() {
         <p className="text-sm text-muted-foreground">Sign in to continue to your datarooms.</p>
       </div>
 
-      <div className="mt-8 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <SignInWithGoogleButton className="w-full" />
-          <SignInWithAppleButton className="w-full" />
-        </div>
+      <div className="mt-8 flex flex-col gap-3">
+        <SignInWithGoogleButton />
+        <SignInWithAppleButton />
 
-        <div className="relative text-center text-xs uppercase tracking-widest">
+        <div className="relative py-1 text-center text-xs uppercase tracking-widest">
           <div className="absolute inset-0 top-1/2 flex items-center">
             <div className="w-full border-t border-border" />
           </div>

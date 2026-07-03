@@ -20,11 +20,12 @@ export function AuthLayout({ children, footer }: AuthLayoutProps) {
             <span className="hidden sm:inline">{APP_CONFIG.name}</span>
           </div>
 
-          <div className="mx-auto flex w-full flex-col justify-center space-y-8 px-6 sm:w-[380px]">
+          <div className="mx-auto flex w-full flex-col justify-center space-y-8 px-6 sm:w-[400px]">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="rounded-2xl bg-background/40 p-6 ring-1 ring-[#89BEFF]/20 shadow-[0_1px_0_rgba(137,190,255,0.15),0_24px_60px_-30px_rgba(137,190,255,0.35)] backdrop-blur"
             >
               {children}
             </motion.div>

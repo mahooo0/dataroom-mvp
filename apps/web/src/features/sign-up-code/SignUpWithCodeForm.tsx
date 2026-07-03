@@ -3,10 +3,12 @@ import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { type FormEvent, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/shared/ui/button'
+import { GRADIENT_BTN } from '@/shared/lib/styles'
+import { cn } from '@/shared/lib/utils'
 import { Input } from '@/shared/ui/input'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/shared/ui/input-otp'
 import { Label } from '@/shared/ui/label'
+import { RippleButton } from '@/shared/ui/ripple-button'
 
 type Step = 'email' | 'code'
 
@@ -93,9 +95,16 @@ export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCode
               autoFocus
             />
           </div>
-          <Button type="submit" disabled={!isLoaded || pending} className="w-full">
+          <RippleButton
+            type="submit"
+            variant="outline"
+            size="lg"
+            disabled={!isLoaded || pending}
+            className={cn(GRADIENT_BTN, 'w-full justify-center rounded-xl')}
+            rippleColor="#89BEFF"
+          >
             {pending ? 'Sending code…' : 'Continue with email'}
-          </Button>
+          </RippleButton>
         </motion.form>
       ) : (
         <motion.form
@@ -133,13 +142,16 @@ export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCode
               </InputOTP>
             </div>
           </div>
-          <Button
+          <RippleButton
             type="submit"
+            variant="outline"
+            size="lg"
             disabled={!isLoaded || pending || code.length !== 6}
-            className="w-full"
+            className={cn(GRADIENT_BTN, 'w-full justify-center rounded-xl')}
+            rippleColor="#89BEFF"
           >
             {pending ? 'Verifying…' : 'Create account'}
-          </Button>
+          </RippleButton>
           <button
             type="button"
             className="text-center text-xs text-muted-foreground hover:text-foreground transition"

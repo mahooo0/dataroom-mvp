@@ -2,7 +2,9 @@ import { useSignIn } from '@clerk/react'
 import { useState } from 'react'
 import { siApple } from 'simple-icons'
 import { toast } from 'sonner'
-import { Button } from '@/shared/ui/button'
+import { GRADIENT_BTN } from '@/shared/lib/styles'
+import { cn } from '@/shared/lib/utils'
+import { RippleButton } from '@/shared/ui/ripple-button'
 import { SimpleIcon } from '@/shared/ui/simple-icon'
 
 interface SignInWithAppleButtonProps {
@@ -34,14 +36,16 @@ export function SignInWithAppleButton({
   }
 
   return (
-    <Button
-      variant="secondary"
-      className={className}
+    <RippleButton
+      variant="outline"
+      size="lg"
+      className={cn(GRADIENT_BTN, 'w-full justify-center gap-3 rounded-xl', className)}
       disabled={!isLoaded || pending}
       onClick={handleClick}
+      rippleColor="#89BEFF"
     >
-      <SimpleIcon icon={siApple} className="mr-2 size-4" />
-      Continue with Apple
-    </Button>
+      <SimpleIcon icon={siApple} className="size-5" />
+      <span>Continue with Apple</span>
+    </RippleButton>
   )
 }
