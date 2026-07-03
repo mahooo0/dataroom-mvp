@@ -48,7 +48,7 @@ export function SignInWithAppleButton({
         'dark:bg-black dark:text-white dark:border-black',
         className,
       )}
-      disabled={!isLoaded || pending}
+      disabled={pending}
       onClick={handleClick}
       rippleColor="#ffffff"
       rippleOpacity={0.25}

@@ -99,7 +99,7 @@ export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCode
             type="submit"
             variant="outline"
             size="lg"
-            disabled={!isLoaded || pending}
+            disabled={pending}
             className={cn(GRADIENT_BTN, 'w-full justify-center rounded-xl')}
             rippleColor="#89BEFF"
           >
@@ -146,7 +146,7 @@ export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCode
             type="submit"
             variant="outline"
             size="lg"
-            disabled={!isLoaded || pending || code.length !== 6}
+            disabled={pending || code.length !== 6}
             className={cn(GRADIENT_BTN, 'w-full justify-center rounded-xl')}
             rippleColor="#89BEFF"
           >

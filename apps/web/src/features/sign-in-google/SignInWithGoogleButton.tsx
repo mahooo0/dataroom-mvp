@@ -48,7 +48,7 @@ export function SignInWithGoogleButton({
         'dark:bg-white dark:text-neutral-900 dark:border-[#DADCE0]',
         className,
       )}
-      disabled={!isLoaded || pending}
+      disabled={pending}
       onClick={handleClick}
       rippleColor="#4285F4"
       rippleOpacity={0.18}
