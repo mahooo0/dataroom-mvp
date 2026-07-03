@@ -1,106 +1,108 @@
+import type { CountryCode } from 'libphonenumber-js'
+import { AsYouType, getCountries, getCountryCallingCode } from 'libphonenumber-js'
+import { Check, ChevronDown, Search } from 'lucide-react'
+import { forwardRef, useMemo, useState } from 'react'
+import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 
-import { forwardRef, useMemo, useState } from "react";
-
-import type { CountryCode } from "libphonenumber-js";
-import { AsYouType, getCountries, getCountryCallingCode } from "libphonenumber-js";
-import { Check, ChevronDown, Search } from "lucide-react";
-
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
-import { cn } from "@/shared/lib/utils";
-
-const FEATURED_COUNTRIES: CountryCode[] = ["AZ", "TR", "US", "GB", "DE", "FR", "RU", "UA", "AE"];
+const FEATURED_COUNTRIES: CountryCode[] = ['AZ', 'TR', 'US', 'GB', 'DE', 'FR', 'RU', 'UA', 'AE']
 
 const COUNTRY_NAMES: Partial<Record<CountryCode, string>> = {
-  AZ: "Azerbaijan",
-  TR: "Türkiye",
-  US: "United States",
-  GB: "United Kingdom",
-  DE: "Germany",
-  FR: "France",
-  RU: "Russia",
-  UA: "Ukraine",
-  AE: "United Arab Emirates",
-  IT: "Italy",
-  ES: "Spain",
-  NL: "Netherlands",
-  PL: "Poland",
-  CA: "Canada",
-  AU: "Australia",
-  IN: "India",
-  CN: "China",
-  JP: "Japan",
-  KR: "South Korea",
-  BR: "Brazil",
-  MX: "Mexico",
-};
+  AZ: 'Azerbaijan',
+  TR: 'Türkiye',
+  US: 'United States',
+  GB: 'United Kingdom',
+  DE: 'Germany',
+  FR: 'France',
+  RU: 'Russia',
+  UA: 'Ukraine',
+  AE: 'United Arab Emirates',
+  IT: 'Italy',
+  ES: 'Spain',
+  NL: 'Netherlands',
+  PL: 'Poland',
+  CA: 'Canada',
+  AU: 'Australia',
+  IN: 'India',
+  CN: 'China',
+  JP: 'Japan',
+  KR: 'South Korea',
+  BR: 'Brazil',
+  MX: 'Mexico',
+}
 
 function countryToFlag(code: CountryCode) {
   return code
     .toUpperCase()
-    .split("")
+    .split('')
     .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
-    .join("");
+    .join('')
 }
 
 export type PhoneInputProps = {
-  value: string;
-  onChange: (next: string) => void;
-  defaultCountry?: CountryCode;
-  placeholder?: string;
-  id?: string;
-  "aria-invalid"?: boolean;
-  className?: string;
-};
+  value: string
+  onChange: (next: string) => void
+  defaultCountry?: CountryCode
+  placeholder?: string
+  id?: string
+  'aria-invalid'?: boolean
+  className?: string
+}
 
 export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(function PhoneInput(
-  { value, onChange, defaultCountry = "AZ", placeholder = "Phone number", id, className, ...rest },
+  { value, onChange, defaultCountry = 'AZ', placeholder = 'Phone number', id, className, ...rest },
   ref,
 ) {
-  const [country, setCountry] = useState<CountryCode>(defaultCountry);
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [country, setCountry] = useState<CountryCode>(defaultCountry)
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
 
   const allCountries = useMemo<CountryCode[]>(() => {
-    const seen = new Set<CountryCode>();
-    const order: CountryCode[] = [];
+    const seen = new Set<CountryCode>()
+    const order: CountryCode[] = []
     for (const c of FEATURED_COUNTRIES) {
       if (!seen.has(c)) {
-        order.push(c);
-        seen.add(c);
+        order.push(c)
+        seen.add(c)
       }
     }
     for (const c of getCountries()) {
       if (!seen.has(c)) {
-        order.push(c);
-        seen.add(c);
+        order.push(c)
+        seen.add(c)
       }
     }
-    return order;
-  }, []);
+    return order
+  }, [])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return allCountries;
+    const q = query.trim().toLowerCase()
+    if (!q) return allCountries
     return allCountries.filter((c) => {
-      const name = (COUNTRY_NAMES[c] ?? c).toLowerCase();
-      const dial = `+${getCountryCallingCode(c)}`;
-      return name.includes(q) || c.toLowerCase().includes(q) || dial.includes(q);
-    });
-  }, [allCountries, query]);
+      const name = (COUNTRY_NAMES[c] ?? c).toLowerCase()
+      const dial = `+${getCountryCallingCode(c)}`
+      return name.includes(q) || c.toLowerCase().includes(q) || dial.includes(q)
+    })
+  }, [allCountries, query])
 
   const handleChange = (raw: string) => {
-    const digitsOnly = raw.replace(/[^\d+\s()-]/g, "");
-    const formatter = new AsYouType(country);
-    const formatted = formatter.input(digitsOnly);
-    onChange(formatted);
-  };
+    const digitsOnly = raw.replace(/[^\d+\s()-]/g, '')
+    const formatter = new AsYouType(country)
+    const formatted = formatter.input(digitsOnly)
+    onChange(formatted)
+  }
 
-  const dial = `+${getCountryCallingCode(country)}`;
+  const dial = `+${getCountryCallingCode(country)}`
 
   return (
-    <div className={cn("flex w-full items-stretch rounded-md border focus-within:ring-1 focus-within:ring-ring", className)}>
+    <div
+      className={cn(
+        'flex w-full items-stretch rounded-md border focus-within:ring-1 focus-within:ring-ring',
+        className,
+      )}
+    >
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -127,34 +129,38 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(function
           </div>
           <ul className="max-h-72 overflow-y-auto p-1">
             {filtered.length === 0 ? (
-              <li className="px-3 py-6 text-center text-sm text-muted-foreground">No country found</li>
+              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+                No country found
+              </li>
             ) : (
               filtered.map((c) => {
-                const active = c === country;
+                const active = c === country
                 return (
                   <li key={c}>
                     <button
                       type="button"
                       onClick={() => {
-                        setCountry(c);
-                        setQuery("");
-                        setOpen(false);
+                        setCountry(c)
+                        setQuery('')
+                        setOpen(false)
                         // Re-format current value with new country
-                        const formatter = new AsYouType(c);
-                        onChange(formatter.input(value));
+                        const formatter = new AsYouType(c)
+                        onChange(formatter.input(value))
                       }}
                       className={cn(
-                        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
-                        active ? "bg-accent text-accent-foreground" : "hover:bg-accent/60",
+                        'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm',
+                        active ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
                       )}
                     >
                       <span className="text-base leading-none">{countryToFlag(c)}</span>
                       <span className="flex-1 truncate text-left">{COUNTRY_NAMES[c] ?? c}</span>
-                      <span className="tabular-nums text-muted-foreground">+{getCountryCallingCode(c)}</span>
-                      <Check className={cn("size-4", active ? "opacity-100" : "opacity-0")} />
+                      <span className="tabular-nums text-muted-foreground">
+                        +{getCountryCallingCode(c)}
+                      </span>
+                      <Check className={cn('size-4', active ? 'opacity-100' : 'opacity-0')} />
                     </button>
                   </li>
-                );
+                )
               })
             )}
           </ul>
@@ -174,7 +180,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(function
         {...rest}
       />
     </div>
-  );
-});
+  )
+})
 
-export type { CountryCode };
+export type { CountryCode }

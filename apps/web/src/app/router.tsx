@@ -5,11 +5,12 @@ import {
   Navigate,
   Outlet,
 } from '@tanstack/react-router'
-import { RootLayout } from '@/app/RootLayout'
 import { RequireAuth } from '@/app/RequireAuth'
+import { RootLayout } from '@/app/RootLayout'
 import { DataroomsListPage } from '@/pages/datarooms-list/DataroomsListPage'
 import { SignInPage } from '@/pages/sign-in/SignInPage'
 import { SignUpPage } from '@/pages/sign-up/SignUpPage'
+import { SsoCallbackPage } from '@/pages/sso-callback/SsoCallbackPage'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -37,6 +38,12 @@ const signUpRoute = createRoute({
   component: SignUpPage,
 })
 
+const ssoCallbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sso-callback',
+  component: SsoCallbackPage,
+})
+
 const authedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authed',
@@ -57,6 +64,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   signInRoute,
   signUpRoute,
+  ssoCallbackRoute,
   authedRoute.addChildren([datroomsListRoute]),
 ])
 

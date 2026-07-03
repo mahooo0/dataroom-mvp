@@ -1,0 +1,166 @@
+import { useSignIn } from '@clerk/react'
+import { useNavigate } from '@tanstack/react-router'
+import { AnimatePresence, motion } from 'motion/react'
+import { type FormEvent, useState } from 'react'
+import { toast } from 'sonner'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/shared/ui/input-otp'
+import { Label } from '@/shared/ui/label'
+
+type Step = 'email' | 'code'
+
+interface SignInWithCodeFormProps {
+  redirectTo?: string
+}
+
+export function SignInWithCodeForm({ redirectTo = '/datarooms' }: SignInWithCodeFormProps) {
+  const { signIn, setActive, isLoaded } = useSignIn()
+  const navigate = useNavigate()
+  const [step, setStep] = useState<Step>('email')
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [pending, setPending] = useState(false)
+
+  async function sendCode(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!isLoaded || !signIn || pending) return
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      toast.error('Enter a valid email address')
+      return
+    }
+    setPending(true)
+    try {
+      const attempt = await signIn.create({ identifier: email })
+      const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === 'email_code')
+      if (!factor) {
+        toast.error('Email code sign-in is not enabled for this project')
+        setPending(false)
+        return
+      }
+      await signIn.prepareFirstFactor({
+        strategy: 'email_code',
+        emailAddressId: (factor as { emailAddressId: string }).emailAddressId,
+      })
+      setStep('code')
+      toast.success(`We sent a code to ${email}`)
+    } catch (err) {
+      const message =
+        (err as { errors?: { message: string }[] })?.errors?.[0]?.message ??
+        (err instanceof Error ? err.message : 'Failed to send code')
+      toast.error(message)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function verifyCode(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!isLoaded || !signIn || pending) return
+    if (code.length !== 6) return
+    setPending(true)
+    try {
+      const attempt = await signIn.attemptFirstFactor({ strategy: 'email_code', code })
+      if (attempt.status === 'complete' && attempt.createdSessionId) {
+        await setActive({ session: attempt.createdSessionId })
+        navigate({ to: redirectTo })
+      } else {
+        toast.error(`Verification incomplete (${attempt.status})`)
+      }
+    } catch (err) {
+      const message =
+        (err as { errors?: { message: string }[] })?.errors?.[0]?.message ??
+        (err instanceof Error ? err.message : 'Wrong code')
+      toast.error(message)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {step === 'email' ? (
+        <motion.form
+          key="email"
+          onSubmit={sendCode}
+          className="flex flex-col gap-4"
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -8 }}
+          transition={{ duration: 0.25 }}
+        >
+          <div className="grid gap-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <Button type="submit" disabled={!isLoaded || pending} className="w-full">
+            {pending ? 'Sending code…' : 'Continue with email'}
+          </Button>
+        </motion.form>
+      ) : (
+        <motion.form
+          key="code"
+          onSubmit={verifyCode}
+          className="flex flex-col gap-4"
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -8 }}
+          transition={{ duration: 0.25 }}
+        >
+          <div className="grid gap-2 text-center">
+            <p className="text-sm text-muted-foreground">
+              Enter the 6-digit code sent to <span className="text-foreground">{email}</span>
+            </p>
+            <div className="flex justify-center">
+              <InputOTP
+                maxLength={6}
+                value={code}
+                onChange={setCode}
+                autoFocus
+                onComplete={(value) => {
+                  if (value.length === 6) {
+                    void verifyCode({
+                      preventDefault: () => {},
+                    } as unknown as FormEvent<HTMLFormElement>)
+                  }
+                }}
+              >
+                <InputOTPGroup>
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <InputOTPSlot key={i} index={i} />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </div>
+          <Button
+            type="submit"
+            disabled={!isLoaded || pending || code.length !== 6}
+            className="w-full"
+          >
+            {pending ? 'Verifying…' : 'Sign in'}
+          </Button>
+          <button
+            type="button"
+            className="text-center text-xs text-muted-foreground hover:text-foreground transition"
+            onClick={() => {
+              setCode('')
+              setStep('email')
+            }}
+          >
+            Use a different email
+          </button>
+        </motion.form>
+      )}
+    </AnimatePresence>
+  )
+}

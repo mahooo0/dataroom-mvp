@@ -20,7 +20,12 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z
     .string()
     .default('http://localhost:5173')
-    .transform((s) => s.split(',').map((o) => o.trim()).filter(Boolean)),
+    .transform((s) =>
+      s
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+    ),
 })
 
 const parsed = envSchema.safeParse(process.env)

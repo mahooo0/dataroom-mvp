@@ -1,6 +1,6 @@
 import { Monitor, Moon, Sun } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
 import { useThemeStore } from '@/shared/lib/theme'
+import { Button } from '@/shared/ui/button'
 
 export function ThemeToggle() {
   const theme = useThemeStore((s) => s.theme)
@@ -8,8 +8,7 @@ export function ThemeToggle() {
 
   const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
   const Icon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor
-  const label =
-    theme === 'light' ? 'Light theme' : theme === 'dark' ? 'Dark theme' : 'System theme'
+  const label = theme === 'light' ? 'Light theme' : theme === 'dark' ? 'Dark theme' : 'System theme'
 
   return (
     <Button

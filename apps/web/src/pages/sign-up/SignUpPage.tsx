@@ -1,39 +1,43 @@
-import { SignUp } from '@clerk/react'
-import { FolderLock } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { SignInWithGoogleButton } from '@/features/sign-in-google/SignInWithGoogleButton'
+import { SignUpWithCodeForm } from '@/features/sign-up-code/SignUpWithCodeForm'
+import { AuthLayout } from '@/widgets/auth-layout/AuthLayout'
 
 export function SignUpPage() {
   return (
-    <div className="flex min-h-full items-center justify-center bg-muted/30 p-6">
-      <div className="w-full max-w-md space-y-6">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="rounded-2xl bg-primary/5 p-3 text-primary">
-            <FolderLock className="h-6 w-6" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-            <p className="text-sm text-muted-foreground">
-              Start organizing your due-diligence documents.
-            </p>
-          </div>
-        </div>
-        <div className="rounded-2xl border bg-card p-6 shadow-sm">
-          <SignUp
-            routing="path"
-            path="/sign-up"
-            signInUrl="/sign-in"
-            fallbackRedirectUrl="/datarooms"
-            appearance={{
-              elements: {
-                card: 'shadow-none border-none bg-transparent',
-                headerTitle: 'hidden',
-                headerSubtitle: 'hidden',
-                formButtonPrimary:
-                  'bg-primary text-primary-foreground hover:bg-primary/90',
-              },
-            }}
-          />
-        </div>
+    <AuthLayout
+      footer={
+        <span>
+          Already have an account?{' '}
+          <Link
+            to="/sign-in/$"
+            params={{ _splat: '' }}
+            className="text-foreground underline-offset-4 hover:underline"
+          >
+            Sign in
+          </Link>
+        </span>
+      }
+    >
+      <div className="space-y-2 text-center">
+        <h1 className="font-medium text-3xl tracking-tight">Create your account</h1>
+        <p className="text-sm text-muted-foreground">
+          Start organizing your due-diligence documents.
+        </p>
       </div>
-    </div>
+
+      <div className="mt-8 space-y-4">
+        <SignInWithGoogleButton className="w-full" />
+
+        <div className="relative text-center text-xs uppercase tracking-widest">
+          <div className="absolute inset-0 top-1/2 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <span className="relative bg-background px-3 text-muted-foreground">or with email</span>
+        </div>
+
+        <SignUpWithCodeForm />
+      </div>
+    </AuthLayout>
   )
 }
