@@ -8,6 +8,7 @@ import {
 import { RequireAuth } from '@/app/RequireAuth'
 import { RootLayout } from '@/app/RootLayout'
 import { AuditLogPage } from '@/pages/audit-log/AuditLogPage'
+import { DataroomDetailPage } from '@/pages/dataroom-detail/DataroomDetailPage'
 import { DataroomsListPage } from '@/pages/datarooms-list/DataroomsListPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { SignInPage } from '@/pages/sign-in/SignInPage'
@@ -66,6 +67,15 @@ const datroomsListRoute = createRoute({
   component: DataroomsListPage,
 })
 
+const dataroomDetailRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/datarooms/$dataroomId',
+  component: () => {
+    const { dataroomId } = dataroomDetailRoute.useParams()
+    return <DataroomDetailPage dataroomId={dataroomId} />
+  },
+})
+
 const trashRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/trash',
@@ -89,7 +99,13 @@ const routeTree = rootRoute.addChildren([
   signInRoute,
   signUpRoute,
   ssoCallbackRoute,
-  authedRoute.addChildren([datroomsListRoute, trashRoute, settingsRoute, auditLogRoute]),
+  authedRoute.addChildren([
+    datroomsListRoute,
+    dataroomDetailRoute,
+    trashRoute,
+    settingsRoute,
+    auditLogRoute,
+  ]),
 ])
 
 export const router = createRouter({

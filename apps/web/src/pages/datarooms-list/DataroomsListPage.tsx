@@ -1,24 +1,66 @@
-import { FolderPlus } from 'lucide-react'
+import type { Dataroom } from '@dataroom/shared'
+import { AlertCircle, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { useDatarooms } from '@/entities/dataroom'
+import { CreateDataroomDialog } from '@/features/create-dataroom'
+import { DeleteDataroomDialog } from '@/features/delete-dataroom'
+import { RenameDataroomDialog } from '@/features/rename-dataroom'
 import { Button } from '@/shared/ui/button'
+import { DataroomsGrid } from '@/widgets/datarooms-list/DataroomsGrid'
+import { DataroomsListSkeleton } from '@/widgets/datarooms-list/DataroomsListSkeleton'
 import { EmptyDatarooms } from '@/widgets/datarooms-list/EmptyDatarooms'
 
 export function DataroomsListPage() {
+  const { data: datarooms, isLoading, isError, refetch } = useDatarooms()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [renaming, setRenaming] = useState<Dataroom | null>(null)
+  const [deleting, setDeleting] = useState<Dataroom | null>(null)
+
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
-      <header className="flex items-center justify-between">
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
+      <header className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Datarooms</h1>
           <p className="text-sm text-muted-foreground">
             Organize your due-diligence documents into secure repositories.
           </p>
         </div>
-        <Button disabled title="Coming in Phase 2">
-          <FolderPlus className="mr-2 h-4 w-4" aria-hidden />
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" aria-hidden />
           New dataroom
         </Button>
       </header>
 
-      <EmptyDatarooms />
+      {isLoading ? (
+        <DataroomsListSkeleton />
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed bg-card/50 px-6 py-16 text-center">
+          <div className="rounded-full bg-destructive/10 p-3 text-destructive">
+            <AlertCircle className="h-6 w-6" aria-hidden />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-medium">Couldn&apos;t load your datarooms</h2>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Check your connection and try again.
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : !datarooms || datarooms.length === 0 ? (
+        <EmptyDatarooms onCreate={() => setCreateOpen(true)} />
+      ) : (
+        <DataroomsGrid
+          datarooms={datarooms}
+          onRename={(dr) => setRenaming(dr)}
+          onDelete={(dr) => setDeleting(dr)}
+        />
+      )}
+
+      <CreateDataroomDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <RenameDataroomDialog dataroom={renaming} onClose={() => setRenaming(null)} />
+      <DeleteDataroomDialog dataroom={deleting} onClose={() => setDeleting(null)} />
     </div>
   )
 }

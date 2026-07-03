@@ -1,0 +1,71 @@
+import type { Dataroom } from '@dataroom/shared'
+import { Link } from '@tanstack/react-router'
+import { formatDistanceToNow } from 'date-fns'
+import { FolderOpen, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
+
+interface DataroomCardProps {
+  dataroom: Dataroom
+  onRename: (dr: Dataroom) => void
+  onDelete: (dr: Dataroom) => void
+}
+
+export function DataroomCard({ dataroom, onRename, onDelete }: DataroomCardProps) {
+  const isOptimistic = dataroom.id.startsWith('temp-')
+
+  return (
+    <div className="group relative flex flex-col overflow-hidden rounded-xl border bg-card p-4 transition hover:border-primary/60 hover:shadow-sm">
+      <Link
+        to="/datarooms/$dataroomId"
+        params={{ dataroomId: dataroom.id }}
+        disabled={isOptimistic}
+        className="flex flex-col gap-3"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary">
+            <FolderOpen className="h-5 w-5" aria-hidden />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <h3 className="line-clamp-1 font-medium">{dataroom.name}</h3>
+          <p className="text-xs text-muted-foreground">
+            {isOptimistic
+              ? 'Saving…'
+              : `Updated ${formatDistanceToNow(new Date(dataroom.updatedAt), { addSuffix: true })}`}
+          </p>
+        </div>
+      </Link>
+
+      <div className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              disabled={isOptimistic}
+              aria-label="Dataroom actions"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => onRename(dataroom)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={() => onDelete(dataroom)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  )
+}
