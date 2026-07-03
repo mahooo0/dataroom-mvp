@@ -1,4 +1,4 @@
-import { useSignUp } from '@clerk/react'
+import { useSignUp } from '@clerk/react/legacy'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { type FormEvent, useState } from 'react'
@@ -93,6 +93,7 @@ export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCode
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
+              className="h-12 rounded-xl px-4 text-[15px]"
             />
           </div>
           <RippleButton

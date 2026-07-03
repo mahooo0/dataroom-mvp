@@ -1,4 +1,4 @@
-import { useSignIn } from '@clerk/react'
+import { useSignIn } from '@clerk/react/legacy'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
@@ -21,6 +21,7 @@ export function SignInWithGoogleButton({
 }: SignInWithGoogleButtonProps) {
   const { signIn, isLoaded } = useSignIn()
   const [pending, setPending] = useState(false)
+  const busy = pending || !isLoaded
 
   async function handleClick() {
     if (!isLoaded || !signIn) return
@@ -28,12 +29,15 @@ export function SignInWithGoogleButton({
       setPending(true)
       await signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: redirectTo,
+        redirectUrl: `${window.location.origin}/sso-callback`,
+        redirectUrlComplete: `${window.location.origin}${redirectTo}`,
       })
     } catch (err) {
       setPending(false)
-      const message = err instanceof Error ? err.message : 'Google sign-in failed'
+      console.error('[Google OAuth]', err)
+      const message =
+        (err as { errors?: { message: string }[] })?.errors?.[0]?.message ??
+        (err instanceof Error ? err.message : 'Google sign-in failed')
       toast.error(message)
     }
   }
@@ -42,13 +46,13 @@ export function SignInWithGoogleButton({
     <RippleButton
       size="lg"
       className={cn(
-        'w-full justify-center gap-3 rounded-xl',
+        'h-12 w-full justify-center gap-3 rounded-xl',
         'border border-[#DADCE0] bg-white text-neutral-900 shadow-sm',
-        'hover:border-neutral-300 hover:shadow',
+        'hover:bg-[#F8F9FA] hover:border-[#C6C9CE]',
         'dark:bg-white dark:text-neutral-900 dark:border-[#DADCE0]',
         className,
       )}
-      disabled={pending}
+      disabled={busy}
       onClick={handleClick}
       rippleColor="#4285F4"
       rippleOpacity={0.18}

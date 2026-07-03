@@ -15,6 +15,7 @@
     "@dataroom/shared": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@floating-ui/react": "^0.27.19",
     "@hookform/resolvers": "^5.4.0",
     "@paper-design/shaders-react": "^0.0.77",
     "@tanstack/react-query": "^5.101.0",

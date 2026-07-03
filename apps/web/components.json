@@ -9,12 +9,15 @@
     "baseColor": "neutral",
     "cssVariables": true
   },
+  "iconLibrary": "lucide",
   "aliases": {
     "components": "@/shared/ui",
     "utils": "@/shared/lib/utils",
-    "hooks": "@/shared/hooks",
+    "ui": "@/shared/ui",
     "lib": "@/shared/lib",
-    "ui": "@/shared/ui"
+    "hooks": "@/shared/hooks"
   },
-  "iconLibrary": "lucide"
+  "registries": {
+    "@animate-ui": "https://animate-ui.com/r/{name}.json"
+  }
 }

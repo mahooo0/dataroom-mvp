@@ -7,10 +7,13 @@ import {
 } from '@tanstack/react-router'
 import { RequireAuth } from '@/app/RequireAuth'
 import { RootLayout } from '@/app/RootLayout'
+import { AuditLogPage } from '@/pages/audit-log/AuditLogPage'
 import { DataroomsListPage } from '@/pages/datarooms-list/DataroomsListPage'
+import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { SignInPage } from '@/pages/sign-in/SignInPage'
 import { SignUpPage } from '@/pages/sign-up/SignUpPage'
 import { SsoCallbackPage } from '@/pages/sso-callback/SsoCallbackPage'
+import { TrashPage } from '@/pages/trash/TrashPage'
 import { AppShell } from '@/widgets/app-shell/AppShell'
 
 const rootRoute = createRootRoute({
@@ -63,12 +66,30 @@ const datroomsListRoute = createRoute({
   component: DataroomsListPage,
 })
 
+const trashRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/trash',
+  component: TrashPage,
+})
+
+const settingsRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/settings',
+  component: SettingsPage,
+})
+
+const auditLogRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/audit-log',
+  component: AuditLogPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   signInRoute,
   signUpRoute,
   ssoCallbackRoute,
-  authedRoute.addChildren([datroomsListRoute]),
+  authedRoute.addChildren([datroomsListRoute, trashRoute, settingsRoute, auditLogRoute]),
 ])
 
 export const router = createRouter({

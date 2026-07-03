@@ -1,4 +1,4 @@
-import { useSignIn } from '@clerk/react'
+import { useSignIn } from '@clerk/react/legacy'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
@@ -21,6 +21,7 @@ export function SignInWithAppleButton({
 }: SignInWithAppleButtonProps) {
   const { signIn, isLoaded } = useSignIn()
   const [pending, setPending] = useState(false)
+  const busy = pending || !isLoaded
 
   async function handleClick() {
     if (!isLoaded || !signIn) return
@@ -28,12 +29,15 @@ export function SignInWithAppleButton({
       setPending(true)
       await signIn.authenticateWithRedirect({
         strategy: 'oauth_apple',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: redirectTo,
+        redirectUrl: `${window.location.origin}/sso-callback`,
+        redirectUrlComplete: `${window.location.origin}${redirectTo}`,
       })
     } catch (err) {
       setPending(false)
-      const message = err instanceof Error ? err.message : 'Apple sign-in failed'
+      console.error('[Apple OAuth]', err)
+      const message =
+        (err as { errors?: { message: string }[] })?.errors?.[0]?.message ??
+        (err instanceof Error ? err.message : 'Apple sign-in failed')
       toast.error(message)
     }
   }
@@ -42,13 +46,13 @@ export function SignInWithAppleButton({
     <RippleButton
       size="lg"
       className={cn(
-        'w-full justify-center gap-3 rounded-xl',
+        'h-12 w-full justify-center gap-3 rounded-xl',
         'border border-black bg-black text-white shadow-sm',
-        'hover:bg-neutral-900',
+        'hover:bg-[#1a1a1a] hover:border-[#1a1a1a]',
         'dark:bg-black dark:text-white dark:border-black',
         className,
       )}
-      disabled={pending}
+      disabled={busy}
       onClick={handleClick}
       rippleColor="#ffffff"
       rippleOpacity={0.25}

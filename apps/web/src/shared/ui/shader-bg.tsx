@@ -35,7 +35,7 @@ export function ShaderBg({
         colorFront={colorFront}
         shape="warp"
         type="8x8"
-        size={2}
+        size={3}
         speed={speed}
         scale={scale}
         style={{ width: '100%', height: '100%' }}
