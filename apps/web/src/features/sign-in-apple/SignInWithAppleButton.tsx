@@ -1,17 +1,20 @@
 import { useSignIn } from '@clerk/react'
 import { useState } from 'react'
-import { siApple } from 'simple-icons'
 import { toast } from 'sonner'
-import { GRADIENT_BTN } from '@/shared/lib/styles'
 import { cn } from '@/shared/lib/utils'
+import { AppleWhiteIcon } from '@/shared/ui/oauth-icons'
 import { RippleButton } from '@/shared/ui/ripple-button'
-import { SimpleIcon } from '@/shared/ui/simple-icon'
 
 interface SignInWithAppleButtonProps {
   className?: string
   redirectTo?: string
 }
 
+/**
+ * Apple sign-in button — official black surface, white text and Apple
+ * mark, matching Apple's brand guidelines. Not tinted with the app
+ * blue gradient (brand policy for Apple auth).
+ */
 export function SignInWithAppleButton({
   className,
   redirectTo = '/datarooms',
@@ -37,15 +40,21 @@ export function SignInWithAppleButton({
 
   return (
     <RippleButton
-      variant="outline"
       size="lg"
-      className={cn(GRADIENT_BTN, 'w-full justify-center gap-3 rounded-xl', className)}
+      className={cn(
+        'w-full justify-center gap-3 rounded-xl',
+        'border border-black bg-black text-white shadow-sm',
+        'hover:bg-neutral-900',
+        'dark:bg-black dark:text-white dark:border-black',
+        className,
+      )}
       disabled={!isLoaded || pending}
       onClick={handleClick}
-      rippleColor="#89BEFF"
+      rippleColor="#ffffff"
+      rippleOpacity={0.25}
     >
-      <SimpleIcon icon={siApple} className="size-5" />
-      <span>Continue with Apple</span>
+      <AppleWhiteIcon className="size-5" />
+      <span className="text-[15px] font-medium">Continue with Apple</span>
     </RippleButton>
   )
 }

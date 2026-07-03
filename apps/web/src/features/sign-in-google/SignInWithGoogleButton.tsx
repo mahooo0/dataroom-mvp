@@ -1,17 +1,20 @@
 import { useSignIn } from '@clerk/react'
 import { useState } from 'react'
-import { siGoogle } from 'simple-icons'
 import { toast } from 'sonner'
-import { GRADIENT_BTN } from '@/shared/lib/styles'
 import { cn } from '@/shared/lib/utils'
+import { GoogleColorIcon } from '@/shared/ui/oauth-icons'
 import { RippleButton } from '@/shared/ui/ripple-button'
-import { SimpleIcon } from '@/shared/ui/simple-icon'
 
 interface SignInWithGoogleButtonProps {
   className?: string
   redirectTo?: string
 }
 
+/**
+ * Clerk-style Google button — white surface, thin border, official
+ * 4-color Google G. Neutral treatment on purpose: leave the blue
+ * gradient for the true primary CTA.
+ */
 export function SignInWithGoogleButton({
   className,
   redirectTo = '/datarooms',
@@ -37,15 +40,21 @@ export function SignInWithGoogleButton({
 
   return (
     <RippleButton
-      variant="outline"
       size="lg"
-      className={cn(GRADIENT_BTN, 'w-full justify-center gap-3 rounded-xl', className)}
+      className={cn(
+        'w-full justify-center gap-3 rounded-xl',
+        'border border-[#DADCE0] bg-white text-neutral-900 shadow-sm',
+        'hover:border-neutral-300 hover:shadow',
+        'dark:bg-white dark:text-neutral-900 dark:border-[#DADCE0]',
+        className,
+      )}
       disabled={!isLoaded || pending}
       onClick={handleClick}
-      rippleColor="#89BEFF"
+      rippleColor="#4285F4"
+      rippleOpacity={0.18}
     >
-      <SimpleIcon icon={siGoogle} className="size-5" />
-      <span>Continue with Google</span>
+      <GoogleColorIcon className="size-5" />
+      <span className="text-[15px] font-medium">Continue with Google</span>
     </RippleButton>
   )
 }
