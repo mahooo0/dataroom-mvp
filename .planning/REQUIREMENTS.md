@@ -169,12 +169,87 @@ Which phases cover which requirements. Filled by roadmapper.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Populated by `gsd-roadmapper`) | | |
+| AUTH-01 | Phase 1: Bootstrap & Auth | Pending |
+| AUTH-02 | Phase 1: Bootstrap & Auth | Pending |
+| AUTH-03 | Phase 1: Bootstrap & Auth | Pending |
+| AUTH-04 | Phase 1: Bootstrap & Auth | Pending |
+| AUTH-05 | Phase 1: Bootstrap & Auth | Pending |
+| DR-01 | Phase 2: Datarooms CRUD | Pending |
+| DR-02 | Phase 2: Datarooms CRUD | Pending |
+| DR-03 | Phase 2: Datarooms CRUD | Pending |
+| DR-04 | Phase 2: Datarooms CRUD | Pending |
+| DR-05 | Phase 2: Datarooms CRUD | Pending |
+| FOLD-01 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-02 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-03 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-04 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-05 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| FOLD-06 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-07 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-08 | Phase 3: Folder Tree & Breadcrumbs | Pending |
+| FOLD-09 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| FILE-01 | Phase 4: Upload Path | Pending |
+| FILE-02 | Phase 4: Upload Path | Pending |
+| FILE-03 | Phase 4: Upload Path | Pending |
+| FILE-04 | Phase 4: Upload Path | Pending |
+| FILE-05 | Phase 4: Upload Path | Pending |
+| FILE-06 | Phase 4: Upload Path | Pending |
+| FILE-07 | Phase 4: Upload Path | Pending |
+| FILE-08 | Phase 4: Upload Path | Pending |
+| FILE-09 | Phase 4: Upload Path | Pending |
+| FILE-10 | Phase 4: Upload Path | Pending |
+| FILE-11 | Phase 5: File CRUD | Pending |
+| FILE-12 | Phase 5: File CRUD | Pending |
+| FILE-13 | Phase 8: Drag-Drop Move & Filter | Pending |
+| FILE-14 | Phase 5: File CRUD | Pending |
+| VIEW-01 | Phase 6: PDF Viewer | Pending |
+| VIEW-02 | Phase 6: PDF Viewer | Pending |
+| VIEW-03 | Phase 6: PDF Viewer | Pending |
+| VIEW-04 | Phase 6: PDF Viewer | Pending |
+| VIEW-05 | Phase 6: PDF Viewer | Pending |
+| VIEW-06 | Phase 6: PDF Viewer | Pending |
+| VIEW-07 | Phase 6: PDF Viewer | Pending |
+| TRASH-01 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| TRASH-02 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| TRASH-03 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| TRASH-04 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| TRASH-05 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| TRASH-06 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| UX-01 | Phase 9: Polish & Deploy | Pending |
+| UX-02 | Phase 9: Polish & Deploy | Pending |
+| UX-03 | Phase 9: Polish & Deploy | Pending |
+| UX-04 | Phase 9: Polish & Deploy | Pending |
+| UX-05 | Phase 9: Polish & Deploy | Pending |
+| UX-06 | Phase 9: Polish & Deploy | Pending |
+| UX-07 | Phase 9: Polish & Deploy | Pending |
+| UX-08 | Phase 1: Bootstrap & Auth | Pending |
+| UX-09 | Phase 9: Polish & Deploy | Pending |
+| DEPLOY-01 | Phase 9: Polish & Deploy | Pending |
+| DEPLOY-02 | Phase 9: Polish & Deploy | Pending |
+| DEPLOY-03 | Phase 9: Polish & Deploy | Pending |
+| DEPLOY-04 | Phase 9: Polish & Deploy | Pending |
+| DEPLOY-05 | Phase 9: Polish & Deploy | Pending |
+| DEPLOY-06 | Phase 9: Polish & Deploy | Pending |
+| TEST-01 | Phase 2: Datarooms CRUD | Pending |
+| TEST-02 | Phase 5: File CRUD | Pending |
+| TEST-03 | Phase 7: Recursive Delete & Trash/Undo | Pending |
+| TEST-04 | Phase 4: Upload Path | Pending |
 
 **Coverage:**
-- v1 requirements: 62 total
-- Mapped to phases: (TBD by roadmapper)
-- Unmapped: 0 target
+- v1 requirements: 65 total (5 AUTH + 5 DR + 9 FOLD + 10 FILE-upload + 4 FILE-CRUD + 7 VIEW + 6 TRASH + 9 UX + 6 DEPLOY + 4 TEST)
+- Mapped to phases: 65/65 ✓
+- Unmapped: 0
+
+**Phase distribution:**
+- Phase 1 (Bootstrap & Auth): 6 REQs (AUTH-01..05, UX-08)
+- Phase 2 (Datarooms CRUD): 6 REQs (DR-01..05, TEST-01)
+- Phase 3 (Folder Tree & Breadcrumbs): 7 REQs (FOLD-01, FOLD-02, FOLD-03, FOLD-04, FOLD-06, FOLD-07, FOLD-08)
+- Phase 4 (Upload Path): 11 REQs (FILE-01..10, TEST-04)
+- Phase 5 (File CRUD): 4 REQs (FILE-11, FILE-12, FILE-14, TEST-02)
+- Phase 6 (PDF Viewer): 7 REQs (VIEW-01..07)
+- Phase 7 (Recursive Delete & Trash/Undo): 9 REQs (FOLD-05, FOLD-09, TRASH-01..06, TEST-03)
+- Phase 8 (Drag-Drop Move & Filter): 1 REQ (FILE-13)
+- Phase 9 (Polish & Deploy): 14 REQs (UX-01..07, UX-09, DEPLOY-01..06)
 
 ---
-*Requirements defined: 2026-07-03*
+*Requirements defined: 2026-07-03; Traceability populated: 2026-07-03*
