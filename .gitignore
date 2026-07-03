@@ -20,7 +20,9 @@ routeTree.gen.ts
 .env
 .env.local
 .env.*.local
+.secrets.*
 !.env.example
+!.env.dev-infra.example
 
 # Logs
 *.log

@@ -15,7 +15,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-dataroom}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "127.0.0.1:5432:5432"
+      # 5432 is taken on this VPS by an existing service; use 15432 on host.
+      # Reach it locally via: ssh -N -L 5432:localhost:15432 holy-water
+      - "127.0.0.1:15432:5432"
     volumes:
       - dataroom-pgdata:/var/lib/postgresql/data
     healthcheck:
