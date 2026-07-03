@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { APP_CONFIG } from '@/shared/config/app-config'
 import { BrandMark } from '@/shared/ui/brand-mark'
+import { ShaderBg } from '@/shared/ui/shader-bg'
 
 interface AuthLayoutProps {
   children: ReactNode
@@ -45,24 +46,27 @@ export function AuthLayout({ children, footer }: AuthLayoutProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.5, ease: 'easeOut' }}
-          className="relative order-2 hidden h-full overflow-hidden rounded-3xl bg-primary text-primary-foreground lg:flex"
+          className="relative order-2 hidden h-full overflow-hidden rounded-3xl bg-[#08090a] text-white lg:flex"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.14),_transparent_50%)]" />
+          <ShaderBg colorBack="#08090a" colorFront="#eaeef2" speed={0.55} scale={1.25} />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#08090a]/10 via-transparent to-[#08090a]/50" />
 
-          <div className="absolute top-10 space-y-3 px-10">
-            <h1 className="font-medium text-2xl leading-tight max-w-md">{APP_CONFIG.hero.title}</h1>
-            <p className="text-sm max-w-md text-primary-foreground/80">
-              {APP_CONFIG.hero.subtitle}
-            </p>
-          </div>
+          <div className="relative z-10 flex h-full w-full flex-col justify-between p-10">
+            <div className="space-y-3">
+              <h1 className="max-w-md font-medium text-2xl leading-tight text-white">
+                {APP_CONFIG.hero.title}
+              </h1>
+              <p className="max-w-md text-sm text-white/70">{APP_CONFIG.hero.subtitle}</p>
+            </div>
 
-          <div className="absolute bottom-10 flex w-full justify-between gap-6 px-10">
-            {APP_CONFIG.hero.highlights.map((h) => (
-              <div key={h.heading} className="flex-1 space-y-1">
-                <h2 className="font-medium text-sm">{h.heading}</h2>
-                <p className="text-sm text-primary-foreground/80">{h.body}</p>
-              </div>
-            ))}
+            <div className="flex w-full flex-wrap justify-between gap-6">
+              {APP_CONFIG.hero.highlights.map((h) => (
+                <div key={h.heading} className="flex-1 min-w-[180px] space-y-1">
+                  <h2 className="font-medium text-sm text-white">{h.heading}</h2>
+                  <p className="text-sm text-white/70">{h.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </motion.div>
       </div>
