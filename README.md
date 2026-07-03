@@ -19,8 +19,11 @@ Detailed rules and rationale live in `CLAUDE.md`. Roadmap in `.planning/ROADMAP.
 
 - Node.js 22+ (`.nvmrc` provided — `nvm use`)
 - pnpm 10+ (`corepack enable && corepack prepare pnpm@10.5.2 --activate`)
-- Docker + Docker Compose
-- A Clerk account with a **development instance** — [dashboard.clerk.com](https://dashboard.clerk.com/apps)
+- SSH access to the Dokploy VPS (alias `holy-water` in `~/.ssh/config`)
+- A Clerk account linked to the Data Room app (`app_3G0XlsUZgUI57guII4tDaEUEgPV`)
+
+**Dev infrastructure** (Postgres + MinIO) lives on Dokploy, not locally.
+See `docker-compose.dev-infra.yml` and Dokploy project `Data Room`.
 
 ### One-time setup
 
@@ -28,25 +31,25 @@ Detailed rules and rationale live in `CLAUDE.md`. Roadmap in `.planning/ROADMAP.
 # 1. Install dependencies
 pnpm install
 
-# 2. Configure environment
-cp apps/api/.env.example apps/api/.env.local
-cp apps/web/.env.example apps/web/.env.local
+# 2. Pull Clerk env vars (needs `clerk auth login` first)
+(cd apps/web && clerk env pull)
 
-# Then edit both:
-# - apps/api/.env.local → paste your Clerk secret + publishable keys
-# - apps/web/.env.local → paste the same Clerk publishable key
+# 3. Copy the same Clerk publishable key into apps/api/.env.local plus
+#    DATABASE_URL, S3_* and other values (see apps/api/.env.example for shape).
+#    Ask a teammate for the current MinIO + Postgres secrets — they live in
+#    Dokploy, not in this repo.
 ```
 
 ### Run
 
 ```bash
-# Start Postgres + MinIO in Docker
-pnpm db:up
+# 1. Open SSH tunnel to remote Postgres (keep terminal open, or use tunnel:bg)
+pnpm tunnel
 
-# Push schema to Postgres (dev — no migration files)
-pnpm --filter api db:push
+# 2. In another terminal — push schema if not applied yet
+pnpm db:push
 
-# Start API + web with hot reload
+# 3. Start API + web with hot reload
 pnpm dev
 ```
 
@@ -58,18 +61,18 @@ Open [http://localhost:5173](http://localhost:5173). Sign in via Clerk magic lin
 |---------|-----|
 | Web (Vite) | http://localhost:5173 |
 | API (Fastify) | http://localhost:3001 |
-| Postgres | localhost:5432 (user `dev` / db `dataroom`) |
-| MinIO S3 API | http://localhost:9000 |
-| MinIO Console | http://localhost:9001 (login `minio-dev` / `minio-dev-password`) |
+| Postgres | localhost:25432 (via SSH tunnel → VPS 127.0.0.1:15432) |
+| MinIO S3 API | https://minio.dataroom.holy-water.app |
+| MinIO Console | https://minio-console.dataroom.holy-water.app |
 
 ### Common commands
 
 ```bash
 pnpm dev              # start web + api together (turbo)
-pnpm db:up            # postgres + minio up
-pnpm db:down          # postgres + minio down (data preserved in named volumes)
-pnpm db:reset         # nuke volumes and start fresh (destroys all local data)
-pnpm db:push          # push Drizzle schema to Postgres (dev workflow)
+pnpm tunnel           # SSH tunnel to remote Postgres (foreground)
+pnpm tunnel:bg        # SSH tunnel in background
+pnpm db:push          # push Drizzle schema to remote Postgres (dev workflow)
+pnpm db:studio        # open Drizzle Studio against remote Postgres
 pnpm check:fix        # biome lint + format
 pnpm typecheck        # tsc across all workspaces
 ```

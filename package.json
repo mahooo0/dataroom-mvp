@@ -7,17 +7,17 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "check": "biome check",
     "check:fix": "biome check --write",
     "format": "biome format --write",
-    "db:up": "docker compose -f docker/docker-compose.dev.yml up -d",
-    "db:down": "docker compose -f docker/docker-compose.dev.yml down",
-    "db:reset": "docker compose -f docker/docker-compose.dev.yml down -v && pnpm db:up",
+    "tunnel": "ssh -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -L 25432:localhost:15432 holy-water",
+    "tunnel:bg": "ssh -f -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -L 25432:localhost:15432 holy-water && echo 'Tunnel opened in background on localhost:25432'",
     "db:migrate": "pnpm --filter api db:migrate",
     "db:push": "pnpm --filter api db:push",
+    "db:studio": "pnpm --filter api db:studio",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -28,6 +28,8 @@
     "typescript": "^5.8.3"
   },
   "lint-staged": {
-    "*.{js,ts,jsx,tsx,json}": ["biome check --write --no-errors-on-unmatched"]
+    "*.{js,ts,jsx,tsx,json}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
   }
 }
