@@ -1,7 +1,7 @@
 import type { FileRecord } from '@dataroom/shared'
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
-import { MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react'
+import { Eye, MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react'
 import { PdfThumbnail } from '@/features/view-pdf'
 import type { FileDragData } from '@/shared/dnd'
 import { cn } from '@/shared/lib/utils'
@@ -101,6 +101,10 @@ function FileCard({ file, onOpen, onRename, onShare, onDelete }: FileCardProps) 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => onOpen(file)}>
+              <Eye className="mr-2 h-4 w-4" />
+              Open
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onShare(file)}>
               <Share2 className="mr-2 h-4 w-4" />
               Share

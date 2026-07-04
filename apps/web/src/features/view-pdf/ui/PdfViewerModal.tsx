@@ -1,5 +1,5 @@
 import type { FileRecord } from '@dataroom/shared'
-import { ChevronLeft, ChevronRight, Download, Loader2, Minus, Plus, Share2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Minus, Plus, Share2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Document, Page } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
@@ -9,6 +9,7 @@ import { ShareFileDialog } from '@/features/share-file'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent } from '@/shared/ui/dialog'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useDownloadUrl } from '../model/use-download-url'
 
 interface PdfViewerModalProps {
@@ -198,8 +199,8 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
           className="relative flex-1 overflow-auto bg-muted/40 p-4 pb-16 sm:pb-4"
         >
           {isLoading || !url ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="mx-auto flex justify-center">
+              <Skeleton className="h-[80vh] w-full max-w-[900px] rounded-lg" />
             </div>
           ) : (
             <div className="mx-auto flex justify-center">
@@ -209,8 +210,8 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
                 onLoadError={onLoadError}
                 options={OPTIONS}
                 loading={
-                  <div className="flex h-96 items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <div className="mx-auto w-full max-w-[900px]">
+                    <Skeleton className="h-[80vh] w-full rounded-lg" />
                   </div>
                 }
                 error={
@@ -232,28 +233,68 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
           )}
         </div>
 
-        <footer className="flex items-center justify-center gap-3 border-t bg-background px-3 py-2 sm:hidden">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
-            disabled={pageNumber <= 1}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <span className="min-w-[4rem] text-center text-sm tabular-nums">
-            {pageNumber} / {numPages || '—'}
-          </span>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
-            disabled={pageNumber >= numPages}
-            aria-label="Next page"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+        <footer className="flex items-center justify-between gap-2 border-t bg-background px-3 py-2 sm:hidden">
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+              disabled={pageNumber <= 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <span className="min-w-[3rem] text-center text-xs tabular-nums">
+              {pageNumber} / {numPages || '—'}
+            </span>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+              disabled={pageNumber >= numPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() =>
+                setZoom((z) => {
+                  const current = typeof z === 'number' ? z : 1
+                  return Math.max(0.5, current - 0.25)
+                })
+              }
+              aria-label="Zoom out"
+            >
+              <Minus className="h-5 w-5" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => setZoom('fit-width')}
+              className={cn(
+                'rounded px-2 py-1 text-xs',
+                zoom === 'fit-width' ? 'bg-muted font-medium' : 'text-muted-foreground',
+              )}
+            >
+              Fit
+            </button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() =>
+                setZoom((z) => {
+                  const current = typeof z === 'number' ? z : 1
+                  return Math.min(2, current + 0.25)
+                })
+              }
+              aria-label="Zoom in"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          </div>
         </footer>
         <ShareFileDialog file={shareOpen ? file : null} onClose={() => setShareOpen(false)} />
       </DialogContent>

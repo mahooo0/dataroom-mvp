@@ -114,9 +114,7 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
               }
               onSelectFolder={selectFolder}
               onCreateFolder={() => setCreateParent(folderId)}
-              onUpload={() =>
-                document.querySelector<HTMLInputElement>('input[type="file"]')?.click()
-              }
+              uploadSlot={<UploadTrigger folderId={folderId} label="Upload PDF" />}
               onRenameFile={setRenamingFile}
               onShareFile={setSharingFile}
               onDeleteFile={onFileDelete}
@@ -132,7 +130,7 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
             uploadRows={null}
             onSelectFolder={selectFolder}
             onCreateFolder={() => setCreateParent(folderId)}
-            onUpload={() => {}}
+            uploadSlot={null}
             onRenameFile={setRenamingFile}
             onShareFile={setSharingFile}
             onDeleteFile={onFileDelete}
@@ -173,7 +171,7 @@ interface FolderPaneContentProps {
   uploadRows: React.ReactNode
   onSelectFolder: (id: string) => void
   onCreateFolder: () => void
-  onUpload: () => void
+  uploadSlot: React.ReactNode
   onRenameFile: (f: FileRecord) => void
   onShareFile: (f: FileRecord) => void
   onDeleteFile: (f: FileRecord) => void
@@ -188,7 +186,7 @@ function FolderPaneContent({
   uploadRows,
   onSelectFolder,
   onCreateFolder,
-  onUpload,
+  uploadSlot,
   onRenameFile,
   onShareFile,
   onDeleteFile,
@@ -202,7 +200,7 @@ function FolderPaneContent({
       <EmptyFolderPane
         canUpload={folderId !== null}
         onCreateFolder={onCreateFolder}
-        onUpload={onUpload}
+        uploadSlot={uploadSlot}
       />
     )
   }

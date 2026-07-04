@@ -1,5 +1,6 @@
 import type { Folder } from '@dataroom/shared'
 import { AlertTriangle } from 'lucide-react'
+import { useFolderDescendantCounts } from '@/entities/folder'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -18,6 +19,7 @@ interface DeleteFolderDialogProps {
 
 export function DeleteFolderDialog({ folder, onClose }: DeleteFolderDialogProps) {
   const remove = useDeleteFolder()
+  const counts = useFolderDescendantCounts(folder?.id ?? null)
 
   const onConfirm = async () => {
     if (!folder) return
@@ -29,8 +31,9 @@ export function DeleteFolderDialog({ folder, onClose }: DeleteFolderDialogProps)
     onClose()
   }
 
-  const childFolders = folder?.childFolderCount ?? 0
-  const files = folder?.fileCount ?? 0
+  const childFolders = counts.data?.folderCount ?? folder?.childFolderCount ?? 0
+  const files = counts.data?.fileCount ?? folder?.fileCount ?? 0
+  const total = childFolders + files
 
   return (
     <Dialog open={!!folder} onOpenChange={(open) => !open && onClose()}>
@@ -43,14 +46,14 @@ export function DeleteFolderDialog({ folder, onClose }: DeleteFolderDialogProps)
           <DialogDescription>
             <span>
               This moves <span className="font-medium">{folder?.name}</span>
-              {childFolders + files > 0 && (
+              {total > 0 && (
                 <>
                   {' '}
-                  and its {files} file{files === 1 ? '' : 's'} and {childFolders} folder
-                  {childFolders === 1 ? '' : 's'}
+                  and everything inside it — {files} file{files === 1 ? '' : 's'} and {childFolders}{' '}
+                  folder{childFolders === 1 ? '' : 's'}
                 </>
               )}{' '}
-              to Trash. You can restore it before it&apos;s permanently deleted.
+              to Trash. You can restore it from Trash before permanent deletion.
             </span>
           </DialogDescription>
         </DialogHeader>

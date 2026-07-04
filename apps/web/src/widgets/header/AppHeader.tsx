@@ -1,4 +1,5 @@
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useDatarooms } from '@/entities/dataroom'
 import { useFolders } from '@/entities/folder'
@@ -11,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/ui/breadcrumb'
+import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { DataroomBreadcrumbs } from '@/widgets/breadcrumbs/DataroomBreadcrumbs'
 import { IconFilter } from '@/widgets/header/IconFilter'
@@ -107,6 +109,18 @@ export function AppHeader() {
       <div className="ml-auto flex items-center gap-2">
         <IconFilter />
         <SearchDialog />
+        <Button
+          asChild
+          size="icon"
+          variant="ghost"
+          aria-label="Trash"
+          className="h-8 w-8"
+          title="Trash"
+        >
+          <Link to="/trash">
+            <Trash2 className="h-4 w-4" aria-hidden />
+          </Link>
+        </Button>
         <ThemeToggle />
       </div>
     </header>

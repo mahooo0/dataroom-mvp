@@ -1,15 +1,21 @@
+import type { Folder } from '@dataroom/shared'
 import {
   DndContext,
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
+  KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { useQueryClient } from '@tanstack/react-query'
 import { FileText, Folder as FolderIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { type ReactNode, useState } from 'react'
+import { folderKeys } from '@/entities/folder/model/keys'
 import { useMoveFile } from '@/features/move-file'
 import { useMoveFolder } from '@/features/move-folder'
 import type { DragData, DropData } from '@/shared/dnd'
@@ -24,9 +30,30 @@ export function DragDropRoot({ children }: DragDropRootProps) {
 
   const [active, setActive] = useState<DragData | null>(null)
 
+  const queryClient = useQueryClient()
+
+  const isDescendantOf = (candidateId: string, ancestorId: string, dataroomId: string): boolean => {
+    if (candidateId === ancestorId) return true
+    const folders = queryClient.getQueryData<Folder[]>(folderKeys.inDataroom(dataroomId))
+    if (!folders) return false
+    const byId = new Map(folders.map((f) => [f.id, f]))
+    let current = byId.get(candidateId)
+    while (current?.parentId) {
+      if (current.parentId === ancestorId) return true
+      current = byId.get(current.parentId)
+    }
+    return false
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
 
@@ -56,6 +83,7 @@ export function DragDropRoot({ children }: DragDropRootProps) {
       const toParentId = target.kind === 'root' ? null : target.folderId
       if (toParentId === dragged.id) return
       if (dragged.parentId === toParentId) return
+      if (toParentId && isDescendantOf(toParentId, dragged.id, dragged.dataroomId)) return
       moveFolder.mutate({
         id: dragged.id,
         dataroomId: dragged.dataroomId,

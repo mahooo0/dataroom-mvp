@@ -14,6 +14,7 @@ import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { SignInPage } from '@/pages/sign-in/SignInPage'
 import { SignUpPage } from '@/pages/sign-up/SignUpPage'
 import { SsoCallbackPage } from '@/pages/sso-callback/SsoCallbackPage'
+import { TrashPage } from '@/pages/trash/TrashPage'
 import { AppShell } from '@/widgets/app-shell/AppShell'
 
 const rootRoute = createRootRoute({
@@ -94,13 +95,19 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 })
 
+const trashRoute = createRoute({
+  getParentRoute: () => authedRoute,
+  path: '/trash',
+  component: TrashPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   signInRoute,
   signUpRoute,
   ssoCallbackRoute,
   publicShareRoute,
-  authedRoute.addChildren([datroomsListRoute, dataroomDetailRoute, settingsRoute]),
+  authedRoute.addChildren([datroomsListRoute, dataroomDetailRoute, settingsRoute, trashRoute]),
 ])
 
 export const router = createRouter({

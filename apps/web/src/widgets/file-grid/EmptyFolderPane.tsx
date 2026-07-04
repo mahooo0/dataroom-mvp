@@ -1,13 +1,14 @@
-import { FolderPlus, Upload } from 'lucide-react'
+import { FolderPlus } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 
 interface EmptyFolderPaneProps {
   canUpload: boolean
   onCreateFolder: () => void
-  onUpload: () => void
+  uploadSlot?: ReactNode
 }
 
-export function EmptyFolderPane({ canUpload, onCreateFolder, onUpload }: EmptyFolderPaneProps) {
+export function EmptyFolderPane({ canUpload, onCreateFolder, uploadSlot }: EmptyFolderPaneProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed bg-card/40 px-6 py-16 text-center">
       <div className="rounded-full bg-muted p-3 text-muted-foreground">
@@ -29,13 +30,7 @@ export function EmptyFolderPane({ canUpload, onCreateFolder, onUpload }: EmptyFo
           New folder
           <RippleButtonRipples />
         </RippleButton>
-        {canUpload && (
-          <RippleButton onClick={onUpload}>
-            <Upload className="mr-2 h-4 w-4" aria-hidden />
-            Upload PDF
-            <RippleButtonRipples />
-          </RippleButton>
-        )}
+        {canUpload && uploadSlot}
       </div>
     </div>
   )
