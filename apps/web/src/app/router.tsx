@@ -70,9 +70,13 @@ const datroomsListRoute = createRoute({
 const dataroomDetailRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/datarooms/$dataroomId',
+  validateSearch: (search: Record<string, unknown>) => ({
+    folderId: typeof search.folderId === 'string' ? search.folderId : undefined,
+  }),
   component: () => {
     const { dataroomId } = dataroomDetailRoute.useParams()
-    return <DataroomDetailPage dataroomId={dataroomId} />
+    const { folderId } = dataroomDetailRoute.useSearch()
+    return <DataroomDetailPage dataroomId={dataroomId} folderId={folderId ?? null} />
   },
 })
 
