@@ -5,29 +5,29 @@ import { useApi } from '@/shared/api/client'
 import { apiErrorMessage } from '@/shared/lib/api-error'
 import { shareKeys } from './keys'
 
-export function useShare(dataroomId: string | null) {
+export function useShare(fileId: string | null) {
   const api = useApi()
   return useQuery({
-    queryKey: dataroomId ? shareKeys.detail(dataroomId) : shareKeys.all,
-    enabled: !!dataroomId,
+    queryKey: fileId ? shareKeys.detail(fileId) : shareKeys.all,
+    enabled: !!fileId,
     queryFn: async () => {
-      const raw = await api.get(`datarooms/${dataroomId}/share`).json()
+      const raw = await api.get(`files/${fileId}/share`).json()
       return shareResponse.parse(raw).share
     },
     staleTime: 30_000,
   })
 }
 
-export function useCreateShare(dataroomId: string) {
+export function useCreateShare(fileId: string) {
   const api = useApi()
   const qc = useQueryClient()
   return useMutation<Share>({
     mutationFn: async () => {
-      const raw = await api.post(`datarooms/${dataroomId}/share`).json()
+      const raw = await api.post(`files/${fileId}/share`).json()
       return shareSchema.parse(raw)
     },
     onSuccess: (share) => {
-      qc.setQueryData(shareKeys.detail(dataroomId), share)
+      qc.setQueryData(shareKeys.detail(fileId), share)
     },
     onError: (err) => {
       toast.error(apiErrorMessage(err, 'Failed to create share link'))
@@ -35,15 +35,15 @@ export function useCreateShare(dataroomId: string) {
   })
 }
 
-export function useRevokeShare(dataroomId: string) {
+export function useRevokeShare(fileId: string) {
   const api = useApi()
   const qc = useQueryClient()
   return useMutation<void>({
     mutationFn: async () => {
-      await api.delete(`datarooms/${dataroomId}/share`)
+      await api.delete(`files/${fileId}/share`)
     },
     onSuccess: () => {
-      qc.setQueryData(shareKeys.detail(dataroomId), null)
+      qc.setQueryData(shareKeys.detail(fileId), null)
     },
     onError: (err) => {
       toast.error(apiErrorMessage(err, 'Failed to revoke share'))

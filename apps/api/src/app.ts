@@ -1,5 +1,6 @@
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
+import rateLimit from '@fastify/rate-limit'
 import sensible from '@fastify/sensible'
 import Fastify from 'fastify'
 import {
@@ -19,6 +20,7 @@ import { meRoutes } from '@/routes/me'
 import { publicSharesRoutes } from '@/routes/public-shares'
 import { searchRoutes } from '@/routes/search'
 import { sharesRoutes } from '@/routes/shares'
+import { trashRoutes } from '@/routes/trash'
 
 export async function buildApp() {
   const app = Fastify({
@@ -29,7 +31,7 @@ export async function buildApp() {
             transport: { target: 'pino-pretty', options: { colorize: true } },
           }
         : { level: 'info' },
-    disableRequestLogging: env.NODE_ENV === 'production',
+    disableRequestLogging: false,
   }).withTypeProvider<ZodTypeProvider>()
 
   app.setValidatorCompiler(validatorCompiler)
@@ -42,6 +44,10 @@ export async function buildApp() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   })
   await app.register(sensible)
+  await app.register(rateLimit, {
+    global: false,
+    keyGenerator: (req) => req.auth?.userId ?? req.ip,
+  })
   await app.register(errorHandlerPlugin)
   await app.register(clerkAuthPlugin)
 
@@ -54,6 +60,7 @@ export async function buildApp() {
   await app.register(meRoutes)
   await app.register(searchRoutes)
   await app.register(sharesRoutes)
+  await app.register(trashRoutes)
 
   return app
 }

@@ -1,7 +1,7 @@
 import type { FileRecord } from '@dataroom/shared'
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react'
 import { PdfThumbnail } from '@/features/view-pdf'
 import type { FileDragData } from '@/shared/dnd'
 import { cn } from '@/shared/lib/utils'
@@ -17,6 +17,7 @@ interface FileGridProps {
   files: FileRecord[]
   onOpen: (file: FileRecord) => void
   onRename: (file: FileRecord) => void
+  onShare: (file: FileRecord) => void
   onDelete: (file: FileRecord) => void
 }
 
@@ -26,7 +27,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function FileGrid({ files, onOpen, onRename, onDelete }: FileGridProps) {
+export function FileGrid({ files, onOpen, onRename, onShare, onDelete }: FileGridProps) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {files.map((file) => (
@@ -35,6 +36,7 @@ export function FileGrid({ files, onOpen, onRename, onDelete }: FileGridProps) {
           file={file}
           onOpen={onOpen}
           onRename={onRename}
+          onShare={onShare}
           onDelete={onDelete}
         />
       ))}
@@ -46,10 +48,11 @@ interface FileCardProps {
   file: FileRecord
   onOpen: (file: FileRecord) => void
   onRename: (file: FileRecord) => void
+  onShare: (file: FileRecord) => void
   onDelete: (file: FileRecord) => void
 }
 
-function FileCard({ file, onOpen, onRename, onDelete }: FileCardProps) {
+function FileCard({ file, onOpen, onRename, onShare, onDelete }: FileCardProps) {
   const dragData: FileDragData = {
     kind: 'file',
     id: file.id,
@@ -98,6 +101,10 @@ function FileCard({ file, onOpen, onRename, onDelete }: FileCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => onShare(file)}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onRename(file)}>
               <Pencil className="mr-2 h-4 w-4" />
               Rename

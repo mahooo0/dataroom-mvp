@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   createFolderInput,
   DataroomApiError,
@@ -6,7 +7,7 @@ import {
   moveFolderInput,
   renameFolderInput,
 } from '@dataroom/shared'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
@@ -23,13 +24,19 @@ import { mapUniqueViolation } from '@/lib/pg-errors'
 const dataroomParams = z.object({ dataroomId: z.string().uuid() })
 const folderParams = z.object({ id: z.string().uuid() })
 
-type FolderRow = typeof folders.$inferSelect
-interface FolderWithCounts extends FolderRow {
+interface FolderShapeForSerialize {
+  id: string
+  dataroomId: string
+  parentId: string | null
+  name: string
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
   childFolderCount?: number
   fileCount?: number
 }
 
-function serializeFolder(row: FolderWithCounts) {
+function serializeFolder(row: FolderShapeForSerialize) {
   return {
     id: row.id,
     dataroomId: row.dataroomId,
@@ -162,6 +169,38 @@ export async function foldersRoutes(app: FastifyInstance) {
     },
   )
 
+  server.get(
+    '/folders/:id/descendant-counts',
+    {
+      schema: {
+        params: folderParams,
+        response: {
+          200: z.object({ folderCount: z.number().int(), fileCount: z.number().int() }),
+        },
+      },
+    },
+    async (req) => {
+      await assertFolderAccess(req.params.id, req.auth.userId)
+      const rows = await db.execute<{ folder_count: number; file_count: number }>(sql`
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM folders WHERE id = ${req.params.id} AND deleted_at IS NULL
+          UNION ALL
+          SELECT f.id FROM folders f
+          INNER JOIN descendants d ON f.parent_id = d.id
+          WHERE f.deleted_at IS NULL
+        )
+        SELECT
+          ((SELECT COUNT(*) FROM descendants) - 1)::int AS folder_count,
+          (SELECT COUNT(*) FROM files WHERE folder_id IN (SELECT id FROM descendants) AND deleted_at IS NULL AND status = 'ready')::int AS file_count
+      `)
+      const r = rows[0]
+      return {
+        folderCount: Math.max(0, r?.folder_count ?? 0),
+        fileCount: r?.file_count ?? 0,
+      }
+    },
+  )
+
   server.delete(
     '/folders/:id',
     {
@@ -173,16 +212,39 @@ export async function foldersRoutes(app: FastifyInstance) {
     async (req) => {
       await assertFolderAccess(req.params.id, req.auth.userId)
       const now = new Date()
+      const batchId = randomUUID()
       const descendantIds = await collectDescendantFolderIds(req.params.id)
+      const descendantOnly = descendantIds.filter((id) => id !== req.params.id)
 
       await db.transaction(async (tx) => {
         await tx
           .update(folders)
-          .set({ deletedAt: now, updatedAt: now })
-          .where(and(inArray(folders.id, descendantIds), isNull(folders.deletedAt)))
+          .set({
+            deletedAt: now,
+            updatedAt: now,
+            deleteBatchId: batchId,
+            deleteRoot: true,
+          })
+          .where(and(eq(folders.id, req.params.id), isNull(folders.deletedAt)))
+        if (descendantOnly.length > 0) {
+          await tx
+            .update(folders)
+            .set({
+              deletedAt: now,
+              updatedAt: now,
+              deleteBatchId: batchId,
+              deleteRoot: false,
+            })
+            .where(and(inArray(folders.id, descendantOnly), isNull(folders.deletedAt)))
+        }
         await tx
           .update(files)
-          .set({ deletedAt: now, updatedAt: now })
+          .set({
+            deletedAt: now,
+            updatedAt: now,
+            deleteBatchId: batchId,
+            deleteRoot: false,
+          })
           .where(and(inArray(files.folderId, descendantIds), isNull(files.deletedAt)))
       })
 
@@ -210,16 +272,40 @@ export async function foldersRoutes(app: FastifyInstance) {
       }
       if (!row.deletedAt) return serializeFolder(row)
 
-      const stamp = row.deletedAt
+      const now = new Date()
+      const batchId = row.deleteBatchId
+
       await db.transaction(async (tx) => {
-        await tx
-          .update(folders)
-          .set({ deletedAt: null, updatedAt: new Date() })
-          .where(and(eq(folders.dataroomId, row.dataroomId), eq(folders.deletedAt, stamp)))
-        await tx
-          .update(files)
-          .set({ deletedAt: null, updatedAt: new Date() })
-          .where(eq(files.deletedAt, stamp))
+        if (batchId) {
+          await tx
+            .update(folders)
+            .set({
+              deletedAt: null,
+              deleteBatchId: null,
+              deleteRoot: false,
+              updatedAt: now,
+            })
+            .where(eq(folders.deleteBatchId, batchId))
+          await tx
+            .update(files)
+            .set({
+              deletedAt: null,
+              deleteBatchId: null,
+              deleteRoot: false,
+              updatedAt: now,
+            })
+            .where(eq(files.deleteBatchId, batchId))
+        } else {
+          await tx
+            .update(folders)
+            .set({
+              deletedAt: null,
+              deleteBatchId: null,
+              deleteRoot: false,
+              updatedAt: now,
+            })
+            .where(eq(folders.id, req.params.id))
+        }
       })
 
       const [updated] = await db.select().from(folders).where(eq(folders.id, req.params.id))

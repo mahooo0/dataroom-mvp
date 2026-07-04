@@ -50,6 +50,8 @@ export interface FolderWithCountsRow {
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
+  deleteBatchId: string | null
+  deleteRoot: boolean
   childFolderCount: number
   fileCount: number
 }
@@ -69,6 +71,8 @@ export async function listDataroomFoldersWithCounts(
     created_at: string
     updated_at: string
     deleted_at: string | null
+    delete_batch_id: string | null
+    delete_root: boolean
     child_folder_count: number
     file_count: number
   }>(sql`
@@ -80,6 +84,8 @@ export async function listDataroomFoldersWithCounts(
       f.created_at,
       f.updated_at,
       f.deleted_at,
+      f.delete_batch_id,
+      f.delete_root,
       COALESCE(cf.count, 0)::int AS child_folder_count,
       COALESCE(ff.count, 0)::int AS file_count
     FROM folders f
@@ -108,6 +114,8 @@ export async function listDataroomFoldersWithCounts(
     createdAt: new Date(r.created_at),
     updatedAt: new Date(r.updated_at),
     deletedAt: r.deleted_at ? new Date(r.deleted_at) : null,
+    deleteBatchId: r.delete_batch_id,
+    deleteRoot: r.delete_root,
     childFolderCount: r.child_folder_count,
     fileCount: r.file_count,
   }))

@@ -9,6 +9,17 @@ const envSchema = z.object({
 
   CLERK_SECRET_KEY: z.string().min(1),
   CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_AUTHORIZED_PARTIES: z
+    .string()
+    .default('')
+    .transform((s) =>
+      s
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+    ),
+
+  DEV_LOGIN_SECRET: z.string().default(''),
 
   S3_ENDPOINT_INTERNAL: z.string().url(),
   S3_ENDPOINT_PUBLIC: z.string().url(),

@@ -1,7 +1,7 @@
 import type { FileRecord, Folder } from '@dataroom/shared'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { useNavigate } from '@tanstack/react-router'
-import { FolderPlus, Share2 } from 'lucide-react'
+import { FolderPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useDatarooms } from '@/entities/dataroom'
@@ -10,7 +10,7 @@ import { childrenOf, useFolders } from '@/entities/folder'
 import { CreateFolderDialog } from '@/features/create-folder'
 import { useDeleteFile } from '@/features/delete-file'
 import { RenameFileDialog } from '@/features/rename-file'
-import { ShareDataroomDialog } from '@/features/share-dataroom'
+import { ShareFileDialog } from '@/features/share-file'
 import { UploadingRow, UploadTrigger, UploadZone, useUploadStore } from '@/features/upload-file'
 import { PdfViewerModal } from '@/features/view-pdf'
 import type { FolderDragData, FolderDropData } from '@/shared/dnd'
@@ -39,8 +39,8 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
 
   const [createParent, setCreateParent] = useState<string | null | undefined>(undefined)
   const [renamingFile, setRenamingFile] = useState<FileRecord | null>(null)
+  const [sharingFile, setSharingFile] = useState<FileRecord | null>(null)
   const [viewingFile, setViewingFile] = useState<FileRecord | null>(null)
-  const [shareOpen, setShareOpen] = useState(false)
   const deleteFile = useDeleteFile()
 
   const selectFolder = (id: string | null) => {
@@ -73,11 +73,6 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
   return (
     <section className="flex h-full flex-col overflow-y-auto">
       <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
-        <RippleButton variant="outline" onClick={() => setShareOpen(true)}>
-          <Share2 className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">Share</span>
-          <RippleButtonRipples />
-        </RippleButton>
         <RippleButton variant="outline" onClick={() => setCreateParent(folderId)}>
           <FolderPlus className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">New folder</span>
@@ -123,6 +118,7 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
                 document.querySelector<HTMLInputElement>('input[type="file"]')?.click()
               }
               onRenameFile={setRenamingFile}
+              onShareFile={setSharingFile}
               onDeleteFile={onFileDelete}
               onOpenFile={setViewingFile}
             />
@@ -138,6 +134,7 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
             onCreateFolder={() => setCreateParent(folderId)}
             onUpload={() => {}}
             onRenameFile={setRenamingFile}
+            onShareFile={setSharingFile}
             onDeleteFile={onFileDelete}
             onOpenFile={setViewingFile}
           />
@@ -151,11 +148,8 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
         onOpenChange={(open) => !open && setCreateParent(undefined)}
       />
       <RenameFileDialog file={renamingFile} onClose={() => setRenamingFile(null)} />
+      <ShareFileDialog file={sharingFile} onClose={() => setSharingFile(null)} />
       <PdfViewerModal file={viewingFile} onClose={() => setViewingFile(null)} />
-      <ShareDataroomDialog
-        dataroom={shareOpen ? dataroom : null}
-        onClose={() => setShareOpen(false)}
-      />
     </section>
   )
 }
@@ -181,6 +175,7 @@ interface FolderPaneContentProps {
   onCreateFolder: () => void
   onUpload: () => void
   onRenameFile: (f: FileRecord) => void
+  onShareFile: (f: FileRecord) => void
   onDeleteFile: (f: FileRecord) => void
   onOpenFile: (f: FileRecord) => void
 }
@@ -195,6 +190,7 @@ function FolderPaneContent({
   onCreateFolder,
   onUpload,
   onRenameFile,
+  onShareFile,
   onDeleteFile,
   onOpenFile,
 }: FolderPaneContentProps) {
@@ -240,6 +236,7 @@ function FolderPaneContent({
             files={files}
             onOpen={onOpenFile}
             onRename={onRenameFile}
+            onShare={onShareFile}
             onDelete={onDeleteFile}
           />
         </section>

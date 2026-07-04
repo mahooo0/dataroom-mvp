@@ -1,10 +1,11 @@
 import type { FileRecord } from '@dataroom/shared'
-import { ChevronLeft, ChevronRight, Download, Loader2, Minus, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Loader2, Minus, Plus, Share2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Document, Page } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import '../lib/pdf-worker'
+import { ShareFileDialog } from '@/features/share-file'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent } from '@/shared/ui/dialog'
@@ -24,6 +25,7 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
   const [pageNumber, setPageNumber] = useState(1)
   const [numPages, setNumPages] = useState(0)
   const [zoom, setZoom] = useState<ZoomMode>('fit-width')
+  const [shareOpen, setShareOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(800)
 
@@ -165,6 +167,15 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
           <Button
             variant="outline"
             size="icon"
+            onClick={() => setShareOpen(true)}
+            aria-label="Share"
+            className="shrink-0"
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             onClick={downloadFile}
             aria-label="Download"
             className="shrink-0 sm:hidden"
@@ -244,6 +255,7 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
             <ChevronRight className="h-5 w-5" />
           </Button>
         </footer>
+        <ShareFileDialog file={shareOpen ? file : null} onClose={() => setShareOpen(false)} />
       </DialogContent>
     </Dialog>
   )

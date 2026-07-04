@@ -1,4 +1,4 @@
-import type { Dataroom } from '@dataroom/shared'
+import type { FileRecord } from '@dataroom/shared'
 import { Check, Copy, Link2, Loader2, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -15,16 +15,16 @@ import {
 import { Input } from '@/shared/ui/input'
 import { useCreateShare, useRevokeShare, useShare } from '../model/use-share'
 
-interface ShareDataroomDialogProps {
-  dataroom: Dataroom | null
+interface ShareFileDialogProps {
+  file: FileRecord | null
   onClose: () => void
 }
 
-export function ShareDataroomDialog({ dataroom, onClose }: ShareDataroomDialogProps) {
-  const dataroomId = dataroom?.id ?? null
-  const { data: share, isLoading } = useShare(dataroomId)
-  const create = useCreateShare(dataroomId ?? '')
-  const revoke = useRevokeShare(dataroomId ?? '')
+export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
+  const fileId = file?.id ?? null
+  const { data: share, isLoading } = useShare(fileId)
+  const create = useCreateShare(fileId ?? '')
+  const revoke = useRevokeShare(fileId ?? '')
   const [copied, setCopied] = useState(false)
 
   const shareUrl = share?.shareUrl
@@ -42,15 +42,15 @@ export function ShareDataroomDialog({ dataroom, onClose }: ShareDataroomDialogPr
   }
 
   return (
-    <Dialog open={!!dataroom} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={!!file} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-4 w-4" />
-            Share &quot;{dataroom?.name}&quot;
+            Share &quot;{file?.name}&quot;
           </DialogTitle>
           <DialogDescription>
-            Anyone with the link gets read-only access to this dataroom and all its files.
+            Anyone with the link gets read-only access to this file.
           </DialogDescription>
         </DialogHeader>
 
@@ -64,7 +64,7 @@ export function ShareDataroomDialog({ dataroom, onClose }: ShareDataroomDialogPr
             <>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <Link2 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     readOnly
                     value={shareUrl}
@@ -86,7 +86,7 @@ export function ShareDataroomDialog({ dataroom, onClose }: ShareDataroomDialogPr
             </>
           ) : (
             <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center text-sm text-muted-foreground">
-              This dataroom isn&apos;t shared. Generate a link to invite viewers.
+              This file isn&apos;t shared. Generate a link to send to reviewers.
             </div>
           )}
         </div>
@@ -108,10 +108,7 @@ export function ShareDataroomDialog({ dataroom, onClose }: ShareDataroomDialogPr
               Close
             </Button>
             {!share ? (
-              <RippleButton
-                onClick={() => create.mutate()}
-                disabled={create.isPending || !dataroom}
-              >
+              <RippleButton onClick={() => create.mutate()} disabled={create.isPending || !file}>
                 <Link2 className="mr-2 h-4 w-4" />
                 {create.isPending ? 'Creating…' : 'Create link'}
                 <RippleButtonRipples />

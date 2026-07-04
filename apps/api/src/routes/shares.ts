@@ -6,12 +6,12 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
-import { dataroomShares } from '@/db/schema'
-import { assertDataroomAccess } from '@/lib/ownership'
+import { fileShares } from '@/db/schema'
+import { assertFileAccess } from '@/lib/ownership'
 
-const dataroomParams = z.object({ id: z.string().uuid() })
+const fileParams = z.object({ id: z.string().uuid() })
 
-type ShareRow = typeof dataroomShares.$inferSelect
+type ShareRow = typeof fileShares.$inferSelect
 
 function buildShareUrl(token: string): string {
   return `${env.PUBLIC_WEB_URL.replace(/\/$/, '')}/share/${token}`
@@ -20,7 +20,7 @@ function buildShareUrl(token: string): string {
 function serialize(row: ShareRow): Share {
   return {
     id: row.id,
-    dataroomId: row.dataroomId,
+    fileId: row.fileId,
     token: row.token,
     createdAt: row.createdAt.toISOString(),
     shareUrl: buildShareUrl(row.token),
@@ -37,40 +37,40 @@ export async function sharesRoutes(app: FastifyInstance) {
   server.addHook('preHandler', (req) => app.requireAuth(req))
 
   server.get(
-    '/datarooms/:id/share',
+    '/files/:id/share',
     {
       schema: {
-        params: dataroomParams,
+        params: fileParams,
         response: { 200: shareResponse },
       },
     },
     async (req) => {
-      await assertDataroomAccess(req.params.id, req.auth.userId)
-      const row = await db.query.dataroomShares.findFirst({
-        where: and(eq(dataroomShares.dataroomId, req.params.id), isNull(dataroomShares.revokedAt)),
+      await assertFileAccess(req.params.id, req.auth.userId)
+      const row = await db.query.fileShares.findFirst({
+        where: and(eq(fileShares.fileId, req.params.id), isNull(fileShares.revokedAt)),
       })
       return { share: row ? serialize(row) : null }
     },
   )
 
   server.post(
-    '/datarooms/:id/share',
+    '/files/:id/share',
     {
       schema: {
-        params: dataroomParams,
+        params: fileParams,
         response: { 200: shareSchema },
       },
     },
     async (req) => {
-      await assertDataroomAccess(req.params.id, req.auth.userId)
-      const existing = await db.query.dataroomShares.findFirst({
-        where: and(eq(dataroomShares.dataroomId, req.params.id), isNull(dataroomShares.revokedAt)),
+      await assertFileAccess(req.params.id, req.auth.userId)
+      const existing = await db.query.fileShares.findFirst({
+        where: and(eq(fileShares.fileId, req.params.id), isNull(fileShares.revokedAt)),
       })
       if (existing) return serialize(existing)
 
       const [row] = await db
-        .insert(dataroomShares)
-        .values({ dataroomId: req.params.id, token: generateToken() })
+        .insert(fileShares)
+        .values({ fileId: req.params.id, token: generateToken() })
         .returning()
       if (!row) throw new DataroomApiError('INTERNAL_ERROR', 'Insert returned no row', 500)
       return serialize(row)
@@ -78,20 +78,20 @@ export async function sharesRoutes(app: FastifyInstance) {
   )
 
   server.delete(
-    '/datarooms/:id/share',
+    '/files/:id/share',
     {
       schema: {
-        params: dataroomParams,
+        params: fileParams,
         response: { 200: shareResponse },
       },
     },
     async (req) => {
-      await assertDataroomAccess(req.params.id, req.auth.userId)
+      await assertFileAccess(req.params.id, req.auth.userId)
       const now = new Date()
       await db
-        .update(dataroomShares)
+        .update(fileShares)
         .set({ revokedAt: now })
-        .where(and(eq(dataroomShares.dataroomId, req.params.id), isNull(dataroomShares.revokedAt)))
+        .where(and(eq(fileShares.fileId, req.params.id), isNull(fileShares.revokedAt)))
       return { share: null }
     },
   )

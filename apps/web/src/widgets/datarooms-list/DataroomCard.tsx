@@ -1,7 +1,7 @@
 import type { Dataroom } from '@dataroom/shared'
 import { Link } from '@tanstack/react-router'
 import { formatDistanceToNow } from 'date-fns'
-import { MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { DataroomOrb } from '@/entities/dataroom'
 import { Button } from '@/shared/ui/button'
 import {
@@ -15,10 +15,9 @@ interface DataroomCardProps {
   dataroom: Dataroom
   onRename: (dr: Dataroom) => void
   onDelete: (dr: Dataroom) => void
-  onShare: (dr: Dataroom) => void
 }
 
-export function DataroomCard({ dataroom, onRename, onDelete, onShare }: DataroomCardProps) {
+export function DataroomCard({ dataroom, onRename, onDelete }: DataroomCardProps) {
   const isOptimistic = dataroom.id.startsWith('temp-')
 
   return (
@@ -56,10 +55,6 @@ export function DataroomCard({ dataroom, onRename, onDelete, onShare }: Dataroom
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => onShare(dataroom)}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Share
-            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onRename(dataroom)}>
               <Pencil className="mr-2 h-4 w-4" />
               Rename

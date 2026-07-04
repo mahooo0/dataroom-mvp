@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   createDataroomInput,
   DATAROOM_ICON_KEYS,
@@ -7,12 +8,12 @@ import {
   dataroomSchema,
   renameDataroomInput,
 } from '@dataroom/shared'
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { db } from '@/db/client'
-import { datarooms } from '@/db/schema'
+import { datarooms, files, folders } from '@/db/schema'
 import { assertDataroomAccess } from '@/lib/ownership'
 import { mapUniqueViolation } from '@/lib/pg-errors'
 
@@ -125,11 +126,39 @@ export async function dataroomsRoutes(app: FastifyInstance) {
     async (req) => {
       await assertDataroomAccess(req.params.id, req.auth.userId)
       const now = new Date()
-      const [row] = await db
-        .update(datarooms)
-        .set({ deletedAt: now, updatedAt: now })
-        .where(eq(datarooms.id, req.params.id))
-        .returning()
+      const batchId = randomUUID()
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(datarooms)
+          .set({
+            deletedAt: now,
+            updatedAt: now,
+            deleteBatchId: batchId,
+            deleteRoot: true,
+          })
+          .where(eq(datarooms.id, req.params.id))
+        await tx
+          .update(folders)
+          .set({
+            deletedAt: now,
+            updatedAt: now,
+            deleteBatchId: batchId,
+            deleteRoot: false,
+          })
+          .where(and(eq(folders.dataroomId, req.params.id), isNull(folders.deletedAt)))
+        await tx.execute(sql`
+          UPDATE files
+          SET deleted_at = ${now},
+              updated_at = ${now},
+              delete_batch_id = ${batchId},
+              delete_root = false
+          WHERE deleted_at IS NULL
+            AND folder_id IN (SELECT id FROM folders WHERE dataroom_id = ${req.params.id})
+        `)
+      })
+
+      const [row] = await db.select().from(datarooms).where(eq(datarooms.id, req.params.id))
       if (!row) throw new DataroomApiError('NOT_FOUND', 'Dataroom not found', 404)
       return serializeDataroom(row)
     },
@@ -148,11 +177,44 @@ export async function dataroomsRoutes(app: FastifyInstance) {
         where: and(eq(datarooms.id, req.params.id), eq(datarooms.ownerId, req.auth.userId)),
       })
       if (!row) throw new DataroomApiError('NOT_FOUND', 'Dataroom not found', 404)
-      const [updated] = await db
-        .update(datarooms)
-        .set({ deletedAt: null, updatedAt: new Date() })
-        .where(eq(datarooms.id, req.params.id))
-        .returning()
+      if (!row.deletedAt) return serializeDataroom(row)
+
+      const now = new Date()
+      const batchId = row.deleteBatchId
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(datarooms)
+          .set({
+            deletedAt: null,
+            deleteBatchId: null,
+            deleteRoot: false,
+            updatedAt: now,
+          })
+          .where(eq(datarooms.id, req.params.id))
+        if (batchId) {
+          await tx
+            .update(folders)
+            .set({
+              deletedAt: null,
+              deleteBatchId: null,
+              deleteRoot: false,
+              updatedAt: now,
+            })
+            .where(eq(folders.deleteBatchId, batchId))
+          await tx
+            .update(files)
+            .set({
+              deletedAt: null,
+              deleteBatchId: null,
+              deleteRoot: false,
+              updatedAt: now,
+            })
+            .where(eq(files.deleteBatchId, batchId))
+        }
+      })
+
+      const [updated] = await db.select().from(datarooms).where(eq(datarooms.id, req.params.id))
       if (!updated) throw new DataroomApiError('NOT_FOUND', 'Dataroom not found', 404)
       return serializeDataroom(updated)
     },

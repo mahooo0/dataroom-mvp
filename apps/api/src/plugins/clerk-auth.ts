@@ -26,6 +26,9 @@ export const clerkAuthPlugin = fp(async (app: FastifyInstance) => {
     try {
       const payload = await verifyToken(token, {
         secretKey: env.CLERK_SECRET_KEY,
+        ...(env.CLERK_AUTHORIZED_PARTIES.length > 0
+          ? { authorizedParties: env.CLERK_AUTHORIZED_PARTIES }
+          : {}),
       })
       if (!payload.sub) {
         throw new DataroomApiError('UNAUTHORIZED', 'Invalid token', 401)

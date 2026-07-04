@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -92,6 +93,9 @@ export async function filesRoutes(app: FastifyInstance) {
   server.post(
     '/files/init',
     {
+      config: {
+        rateLimit: { max: 60, timeWindow: '1 minute' },
+      },
       schema: {
         body: uploadInitInput,
         response: { 200: uploadInitResponse },
@@ -117,16 +121,20 @@ export async function filesRoutes(app: FastifyInstance) {
         )
       }
 
+      const fileId = randomUUID()
+      const s3Key = makeS3Key(req.auth.userId, folder.dataroomId, fileId)
+
       let row: FileRow | undefined
       try {
         const inserted = await db
           .insert(files)
           .values({
+            id: fileId,
             folderId: req.body.folderId,
             name: req.body.name,
             mimeType: req.body.mimeType,
             sizeBytes: req.body.sizeBytes,
-            s3Key: 'pending',
+            s3Key,
             status: 'pending',
           })
           .returning()
@@ -136,27 +144,18 @@ export async function filesRoutes(app: FastifyInstance) {
       }
       if (!row) throw new DataroomApiError('INTERNAL_ERROR', 'Insert returned no row', 500)
 
-      const s3Key = makeS3Key(req.auth.userId, folder.dataroomId, row.id)
-      const [updated] = await db
-        .update(files)
-        .set({ s3Key })
-        .where(eq(files.id, row.id))
-        .returning()
-      if (!updated) throw new DataroomApiError('NOT_FOUND', 'File vanished mid-init', 500)
-
       const uploadUrl = await getSignedUrl(
         s3ForPresign,
         new PutObjectCommand({
           Bucket: BUCKET,
           Key: s3Key,
           ContentType: ACCEPTED_MIME,
-          ContentLength: req.body.sizeBytes,
         }),
         { expiresIn: UPLOAD_URL_TTL_SECONDS },
       )
 
       return {
-        fileId: updated.id,
+        fileId: row.id,
         uploadUrl,
         s3Key,
         expiresIn: UPLOAD_URL_TTL_SECONDS,
@@ -310,9 +309,15 @@ export async function filesRoutes(app: FastifyInstance) {
         return serializeFile({ ...file, deletedAt: now })
       }
 
+      const batchId = randomUUID()
       const [row] = await db
         .update(files)
-        .set({ deletedAt: now, updatedAt: now })
+        .set({
+          deletedAt: now,
+          updatedAt: now,
+          deleteBatchId: batchId,
+          deleteRoot: true,
+        })
         .where(eq(files.id, req.params.id))
         .returning()
       if (!row) throw new DataroomApiError('NOT_FOUND', 'File not found', 404)
@@ -339,7 +344,12 @@ export async function filesRoutes(app: FastifyInstance) {
       if (!file.deletedAt) return { ...serializeFile(file) }
       const [row] = await db
         .update(files)
-        .set({ deletedAt: null, updatedAt: new Date() })
+        .set({
+          deletedAt: null,
+          deleteBatchId: null,
+          deleteRoot: false,
+          updatedAt: new Date(),
+        })
         .where(eq(files.id, req.params.id))
         .returning()
       if (!row) throw new DataroomApiError('NOT_FOUND', 'File not found', 404)

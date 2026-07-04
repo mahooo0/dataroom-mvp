@@ -13,6 +13,9 @@ export async function authRoutes(app: FastifyInstance) {
   server.post(
     '/auth/dev-login',
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: '1 minute' },
+      },
       schema: {
         body: z.object({ email: z.string().email() }),
         response: {
@@ -27,6 +30,12 @@ export async function authRoutes(app: FastifyInstance) {
     async (req) => {
       if (env.NODE_ENV === 'production') {
         throw new DataroomApiError('FORBIDDEN', 'dev-login disabled in production', 403)
+      }
+      if (env.DEV_LOGIN_SECRET) {
+        const header = req.headers['x-dev-login-secret']
+        if (header !== env.DEV_LOGIN_SECRET) {
+          throw new DataroomApiError('FORBIDDEN', 'invalid dev-login secret', 403)
+        }
       }
 
       const { email } = req.body
