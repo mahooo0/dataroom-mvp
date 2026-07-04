@@ -57,8 +57,16 @@ export function RenameFileDialog({ file, onClose }: RenameFileDialogProps) {
 
   const onSubmit = handleSubmit(async (data) => {
     if (!file) return
-    await rename.mutateAsync({ id: file.id, folderId: file.folderId, name: data.name })
+    const trimmed = data.name.trim()
+    const withExt = trimmed.toLowerCase().endsWith('.pdf') ? trimmed : `${trimmed}.pdf`
+    // Close the dialog optimistically so a 409 conflict modal doesn't stack
+    // on top of this one. Rollback restores the file row on error.
     onClose()
+    try {
+      await rename.mutateAsync({ id: file.id, folderId: file.folderId, name: withExt })
+    } catch {
+      // handled by the mutation's onError (toast or conflict modal)
+    }
   })
 
   return (

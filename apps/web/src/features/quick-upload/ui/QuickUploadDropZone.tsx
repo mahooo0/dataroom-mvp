@@ -2,6 +2,7 @@ import { ACCEPTED_MIME } from '@dataroom/shared'
 import { useNavigate } from '@tanstack/react-router'
 import { Upload } from 'lucide-react'
 import { type ReactNode, useCallback, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { useQuickUpload } from '../model/use-quick-upload'
 
@@ -53,9 +54,16 @@ export function QuickUploadDropZone({ children, className }: QuickUploadDropZone
     e.preventDefault()
     dragDepth.current = 0
     setDragging(false)
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.type === ACCEPTED_MIME)
-    if (files.length === 0) return
-    void handleFiles(files)
+    const all = Array.from(e.dataTransfer.files)
+    const pdfs = all.filter((f) => f.type === ACCEPTED_MIME)
+    const skipped = all.length - pdfs.length
+    if (skipped > 0) {
+      toast.warning(
+        `Skipped ${skipped} non-PDF file${skipped === 1 ? '' : 's'} — only PDFs are supported.`,
+      )
+    }
+    if (pdfs.length === 0) return
+    void handleFiles(pdfs)
   }
 
   return (

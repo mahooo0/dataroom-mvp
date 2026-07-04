@@ -48,8 +48,12 @@ export function CreateDataroomDialog({ open, onOpenChange }: CreateDataroomDialo
   }, [open, setFocus, reset])
 
   const onSubmit = handleSubmit(async (data) => {
-    await create.mutateAsync(data)
     onOpenChange(false)
+    try {
+      await create.mutateAsync(data)
+    } catch {
+      // handled by mutation onError (toast or conflict modal)
+    }
   })
 
   return (

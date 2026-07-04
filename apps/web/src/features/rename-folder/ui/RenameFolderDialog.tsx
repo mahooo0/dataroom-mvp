@@ -46,8 +46,12 @@ export function RenameFolderDialog({ folder, onClose }: RenameFolderDialogProps)
 
   const onSubmit = handleSubmit(async (data) => {
     if (!folder) return
-    await rename.mutateAsync({ id: folder.id, dataroomId: folder.dataroomId, name: data.name })
     onClose()
+    try {
+      await rename.mutateAsync({ id: folder.id, dataroomId: folder.dataroomId, name: data.name })
+    } catch {
+      // handled by mutation onError (toast or conflict modal)
+    }
   })
 
   return (

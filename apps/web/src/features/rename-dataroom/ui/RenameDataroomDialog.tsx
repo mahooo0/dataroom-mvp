@@ -49,8 +49,12 @@ export function RenameDataroomDialog({ dataroom, onClose }: RenameDataroomDialog
 
   const onSubmit = handleSubmit(async (data) => {
     if (!dataroom) return
-    await rename.mutateAsync({ id: dataroom.id, name: data.name, iconKey: data.iconKey })
     onClose()
+    try {
+      await rename.mutateAsync({ id: dataroom.id, name: data.name, iconKey: data.iconKey })
+    } catch {
+      // handled by mutation onError (toast or conflict modal)
+    }
   })
 
   return (

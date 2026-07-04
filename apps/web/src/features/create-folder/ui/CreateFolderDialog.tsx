@@ -50,8 +50,12 @@ export function CreateFolderDialog({
   }, [open, setFocus, reset])
 
   const onSubmit = handleSubmit(async (data) => {
-    await create.mutateAsync({ dataroomId, parentId, name: data.name })
     onOpenChange(false)
+    try {
+      await create.mutateAsync({ dataroomId, parentId, name: data.name })
+    } catch {
+      // handled by mutation onError (toast or conflict modal)
+    }
   })
 
   return (

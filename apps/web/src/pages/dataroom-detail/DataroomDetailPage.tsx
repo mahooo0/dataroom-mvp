@@ -27,7 +27,7 @@ interface DataroomDetailPageProps {
 
 export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageProps) {
   const navigate = useNavigate()
-  const { data: datarooms } = useDatarooms()
+  const { data: datarooms, isLoading: dataroomsLoading } = useDatarooms()
   const { data: folders, isLoading: foldersLoading } = useFolders(dataroomId)
   const { data: files, isLoading: filesLoading, isError: filesError } = useFilesInFolder(folderId)
   const uploadSessions = useUploadStore(
@@ -50,6 +50,14 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
       search: { folderId: id ?? undefined },
       replace: false,
     })
+  }
+
+  if (dataroomsLoading) {
+    return (
+      <div className="px-4 py-6 sm:px-6 sm:py-10">
+        <FolderPaneSkeleton />
+      </div>
+    )
   }
 
   if (!dataroom) {

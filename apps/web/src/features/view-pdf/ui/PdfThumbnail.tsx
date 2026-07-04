@@ -22,7 +22,8 @@ export function PdfThumbnail({ fileId, className, width = 220 }: PdfThumbnailPro
   const ref = useRef<HTMLDivElement>(null)
   const [inView, setInView] = useState(false)
   const [errored, setErrored] = useState(false)
-  const { data } = useDownloadUrl(inView ? fileId : null)
+  const { data, refetch } = useDownloadUrl(inView ? fileId : null)
+  const retriedRef = useRef(false)
 
   useEffect(() => {
     const el = ref.current
@@ -37,6 +38,18 @@ export function PdfThumbnail({ fileId, className, width = 220 }: PdfThumbnailPro
     return () => observer.disconnect()
   }, [inView])
 
+  const onLoadError = (err: unknown) => {
+    const message = err instanceof Error ? err.message.toLowerCase() : ''
+    // Presigned URL expired: refetch once and retry rendering. If it fails again,
+    // fall through to the glyph fallback so the tile isn't blank.
+    if (!retriedRef.current && (message.includes('403') || message.includes('unauthorized'))) {
+      retriedRef.current = true
+      void refetch()
+      return
+    }
+    setErrored(true)
+  }
+
   return (
     <div
       ref={ref}
@@ -47,8 +60,9 @@ export function PdfThumbnail({ fileId, className, width = 220 }: PdfThumbnailPro
     >
       {data && !errored ? (
         <Document
+          key={data.url}
           file={data.url}
-          onLoadError={() => setErrored(true)}
+          onLoadError={onLoadError}
           options={OPTIONS}
           loading={<PdfFallback />}
           error={<PdfFallback />}
