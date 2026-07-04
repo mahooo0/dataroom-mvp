@@ -9,6 +9,7 @@ import {
   ACCEPTED_MIME,
   DataroomApiError,
   downloadUrlResponse,
+  fileListResponse,
   fileSchema,
   MAX_FILE_SIZE_BYTES,
   moveFileInput,
@@ -17,12 +18,13 @@ import {
   uploadInitInput,
   uploadInitResponse,
 } from '@dataroom/shared'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
+import { getOwnerUsedBytes } from '@/db/queries'
 import { files } from '@/db/schema'
 import { assertFileAccess, assertFolderAccess } from '@/lib/ownership'
 import { mapUniqueViolation } from '@/lib/pg-errors'
@@ -66,7 +68,7 @@ export async function filesRoutes(app: FastifyInstance) {
       schema: {
         params: folderParams,
         response: {
-          200: z.object({ files: z.array(fileSchema) }),
+          200: fileListResponse,
         },
       },
     },
@@ -105,18 +107,7 @@ export async function filesRoutes(app: FastifyInstance) {
 
       const folder = await assertFolderAccess(req.body.folderId, req.auth.userId)
 
-      const [usageRow] = await db.execute<{ used: string | number | null }>(sql`
-        SELECT COALESCE(SUM(f.size_bytes), 0)::bigint AS used
-        FROM files f
-        INNER JOIN folders fo ON fo.id = f.folder_id
-        INNER JOIN datarooms d ON d.id = fo.dataroom_id
-        WHERE d.owner_id = ${req.auth.userId}
-          AND d.deleted_at IS NULL
-          AND fo.deleted_at IS NULL
-          AND f.deleted_at IS NULL
-          AND f.status IN ('ready', 'pending')
-      `)
-      const usedBytes = Number(usageRow?.used ?? 0)
+      const usedBytes = await getOwnerUsedBytes(req.auth.userId)
       if (usedBytes + req.body.sizeBytes > env.USER_QUOTA_BYTES) {
         throw new DataroomApiError(
           'QUOTA_EXCEEDED',

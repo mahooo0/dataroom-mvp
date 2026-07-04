@@ -1,11 +1,13 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
+import { Settings } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { APP_CONFIG } from '@/shared/config/app-config'
-import { navItems as NAV_ITEMS_LIST } from '@/shared/config/nav-items'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -13,13 +15,13 @@ import {
   SidebarRail,
 } from '@/shared/ui/animate-ui/components/radix/sidebar'
 import { BrandMark } from '@/shared/ui/brand-mark'
-import { NavMain } from './NavMain'
 import { NavUser } from './NavUser'
 import { QuickCreate } from './QuickCreate'
 import { SidebarDatarooms } from './SidebarDatarooms'
 import { StorageMeter } from './StorageMeter'
 
 export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
+  const { pathname } = useLocation()
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -41,7 +43,24 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <QuickCreate />
         <SidebarDatarooms />
-        <NavMain items={NAV_ITEMS_LIST} />
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Settings"
+                  isActive={pathname.startsWith('/settings')}
+                >
+                  <Link to="/settings">
+                    <Settings />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <StorageMeter />

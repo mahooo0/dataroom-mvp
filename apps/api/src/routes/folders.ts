@@ -6,11 +6,16 @@ import {
   moveFolderInput,
   renameFolderInput,
 } from '@dataroom/shared'
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { db } from '@/db/client'
+import {
+  collectDescendantFolderIds,
+  isFolderDescendantOf,
+  listDataroomFoldersWithCounts,
+} from '@/db/queries'
 import { files, folders } from '@/db/schema'
 import { assertDataroomAccess, assertFolderAccess } from '@/lib/ownership'
 import { mapUniqueViolation } from '@/lib/pg-errors'
@@ -38,35 +43,6 @@ function serializeFolder(row: FolderWithCounts) {
   }
 }
 
-async function collectDescendantFolderIds(rootId: string): Promise<string[]> {
-  const rows = await db.execute<{ id: string }>(sql`
-    WITH RECURSIVE descendants AS (
-      SELECT id FROM folders WHERE id = ${rootId} AND deleted_at IS NULL
-      UNION ALL
-      SELECT f.id FROM folders f
-      INNER JOIN descendants d ON f.parent_id = d.id
-      WHERE f.deleted_at IS NULL
-    )
-    SELECT id FROM descendants
-  `)
-  return rows.map((r) => r.id)
-}
-
-async function isDescendant(candidateId: string, ancestorId: string): Promise<boolean> {
-  if (candidateId === ancestorId) return true
-  const rows = await db.execute<{ id: string }>(sql`
-    WITH RECURSIVE descendants AS (
-      SELECT id FROM folders WHERE id = ${ancestorId} AND deleted_at IS NULL
-      UNION ALL
-      SELECT f.id FROM folders f
-      INNER JOIN descendants d ON f.parent_id = d.id
-      WHERE f.deleted_at IS NULL
-    )
-    SELECT id FROM descendants WHERE id = ${candidateId} LIMIT 1
-  `)
-  return rows.length > 0
-}
-
 export async function foldersRoutes(app: FastifyInstance) {
   const server = app.withTypeProvider<ZodTypeProvider>()
 
@@ -82,61 +58,8 @@ export async function foldersRoutes(app: FastifyInstance) {
     },
     async (req) => {
       await assertDataroomAccess(req.params.dataroomId, req.auth.userId)
-
-      const rows = await db.execute<{
-        id: string
-        dataroom_id: string
-        parent_id: string | null
-        name: string
-        created_at: string
-        updated_at: string
-        deleted_at: string | null
-        child_folder_count: number
-        file_count: number
-      }>(sql`
-        SELECT
-          f.id,
-          f.dataroom_id,
-          f.parent_id,
-          f.name,
-          f.created_at,
-          f.updated_at,
-          f.deleted_at,
-          COALESCE(cf.count, 0)::int AS child_folder_count,
-          COALESCE(ff.count, 0)::int AS file_count
-        FROM folders f
-        LEFT JOIN (
-          SELECT parent_id, COUNT(*)::int AS count
-          FROM folders
-          WHERE deleted_at IS NULL
-          GROUP BY parent_id
-        ) cf ON cf.parent_id = f.id
-        LEFT JOIN (
-          SELECT folder_id, COUNT(*)::int AS count
-          FROM files
-          WHERE deleted_at IS NULL AND status = 'ready'
-          GROUP BY folder_id
-        ) ff ON ff.folder_id = f.id
-        WHERE f.dataroom_id = ${req.params.dataroomId}
-          AND f.deleted_at IS NULL
-        ORDER BY f.name ASC
-      `)
-
-      return {
-        folders: rows.map((r) =>
-          serializeFolder({
-            id: r.id,
-            dataroomId: r.dataroom_id,
-            parentId: r.parent_id,
-            name: r.name,
-            createdAt: new Date(r.created_at),
-            updatedAt: new Date(r.updated_at),
-            deletedAt: r.deleted_at ? new Date(r.deleted_at) : null,
-            childFolderCount: r.child_folder_count,
-            fileCount: r.file_count,
-          }),
-        ),
-      }
+      const rows = await listDataroomFoldersWithCounts(req.params.dataroomId)
+      return { folders: rows.map(serializeFolder) }
     },
   )
 
@@ -216,7 +139,7 @@ export async function foldersRoutes(app: FastifyInstance) {
         if (newParent.dataroomId !== folder.dataroomId) {
           throw new DataroomApiError('VALIDATION_FAILED', 'Cannot move across datarooms', 400)
         }
-        if (await isDescendant(req.body.parentId, req.params.id)) {
+        if (await isFolderDescendantOf(req.body.parentId, req.params.id)) {
           throw new DataroomApiError(
             'VALIDATION_FAILED',
             'Cannot move a folder into its own descendant',

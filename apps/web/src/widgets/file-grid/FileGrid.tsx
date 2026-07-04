@@ -2,6 +2,7 @@ import type { FileRecord } from '@dataroom/shared'
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
 import { FileText, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import type { FileDragData } from '@/shared/dnd'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import {
@@ -10,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import type { FileDragData } from '@/widgets/app-shell/DragDropRoot'
 
 interface FileGridProps {
   files: FileRecord[]

@@ -2,8 +2,7 @@ import { type Dataroom, renameDataroomInput } from '@dataroom/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import type { DataroomIconKey } from '@/entities/dataroom'
-import { IconPicker } from '@/features/create-dataroom'
+import { type DataroomIconKey, IconPicker } from '@/entities/dataroom'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,

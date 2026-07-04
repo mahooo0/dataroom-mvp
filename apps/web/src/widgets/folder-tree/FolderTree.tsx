@@ -14,6 +14,7 @@ import {
 import { useCallback, useState } from 'react'
 import { buildFolderTree, type FolderNode } from '@/entities/folder'
 import { useUploadFile } from '@/features/upload-file'
+import type { FolderDragData, FolderDropData, RootDropData } from '@/shared/dnd'
 import { cn } from '@/shared/lib/utils'
 import {
   SidebarMenuAction,
@@ -32,7 +33,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import type { FolderDragData, FolderDropData, RootDropData } from '@/widgets/app-shell/DragDropRoot'
 
 // Same gradient the parent SidebarMenuButton uses for active state — matches
 // the slide-highlight animation across sidebar rows.

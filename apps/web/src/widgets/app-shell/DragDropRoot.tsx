@@ -12,36 +12,7 @@ import { motion } from 'motion/react'
 import { type ReactNode, useState } from 'react'
 import { useMoveFile } from '@/features/move-file'
 import { useMoveFolder } from '@/features/move-folder'
-
-export interface FileDragData {
-  kind: 'file'
-  id: string
-  name: string
-  folderId: string
-}
-
-export interface FolderDragData {
-  kind: 'folder'
-  id: string
-  name: string
-  dataroomId: string
-  parentId: string | null
-}
-
-export type DragData = FileDragData | FolderDragData
-
-export interface FolderDropData {
-  kind: 'folder'
-  folderId: string
-  dataroomId: string
-}
-
-export interface RootDropData {
-  kind: 'root'
-  dataroomId: string
-}
-
-export type DropData = FolderDropData | RootDropData
+import type { DragData, DropData } from '@/shared/dnd'
 
 interface DragDropRootProps {
   children: ReactNode

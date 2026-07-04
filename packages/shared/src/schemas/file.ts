@@ -53,3 +53,6 @@ export const downloadUrlResponse = z.object({
   expiresIn: z.number().int().positive(),
 })
 export type DownloadUrlResponse = z.infer<typeof downloadUrlResponse>
+
+export const fileListResponse = z.object({ files: z.array(fileSchema) })
+export type FileListResponse = z.infer<typeof fileListResponse>

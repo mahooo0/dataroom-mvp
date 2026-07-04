@@ -8,3 +8,4 @@ export {
 } from './model/orbs'
 export { findDataroom, useDatarooms } from './model/use-datarooms'
 export { DataroomOrb } from './ui/DataroomOrb'
+export { IconPicker } from './ui/IconPicker'
