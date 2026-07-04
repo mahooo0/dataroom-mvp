@@ -10,7 +10,9 @@ import { toast } from 'sonner'
 import { fileKeys } from '@/entities/file'
 import { usageKeys } from '@/entities/usage'
 import { useApi } from '@/shared/api/client'
-import { apiErrorMessage } from '@/shared/lib/api-error'
+import { apiErrorMessage, toApiFailure } from '@/shared/lib/api-error'
+import { useNameConflictStore } from '@/shared/lib/name-conflict-store'
+import { suggestNextName } from '@/shared/lib/next-name'
 import { type UploadSession, useUploadStore } from './upload-store'
 
 function putWithProgress(
@@ -45,8 +47,9 @@ export function useUploadFile() {
 
   const runUpload = useCallback(
     async (session: UploadSession) => {
+      let initRaw: unknown
       try {
-        const initRaw = await api
+        initRaw = await api
           .post('files/init', {
             json: {
               folderId: session.folderId,
@@ -56,6 +59,39 @@ export function useUploadFile() {
             },
           })
           .json()
+      } catch (err) {
+        const failure = toApiFailure(err)
+        if (failure?.code === 'FILE_NAME_TAKEN') {
+          useUploadStore.getState().update(session.id, {
+            state: 'error',
+            error: 'A file with that name already exists',
+            abort: undefined,
+          })
+          useNameConflictStore.getState().open({
+            entity: 'file',
+            attemptedName: session.name,
+            suggestion: suggestNextName(session.name),
+            onKeepBoth: (newName) => {
+              useUploadStore.getState().update(session.id, {
+                name: newName,
+                state: 'uploading',
+                error: undefined,
+                progress: 0,
+                fileId: undefined,
+              })
+              void runUpload({ ...session, name: newName })
+            },
+          })
+          return
+        }
+        useUploadStore.getState().update(session.id, {
+          state: 'error',
+          error: apiErrorMessage(err, 'Upload failed'),
+          abort: undefined,
+        })
+        return
+      }
+      try {
         const init = uploadInitResponse.parse(initRaw)
 
         const { promise, abort } = putWithProgress(init.uploadUrl, session.file, (frac) => {
