@@ -1,4 +1,4 @@
-import { FolderOpen, History, type LucideIcon, Settings, Trash2 } from 'lucide-react'
+import { History, type LucideIcon, Settings, Trash2 } from 'lucide-react'
 
 export interface NavSubItem {
   title: string
@@ -29,11 +29,6 @@ export const navItems: NavGroup[] = [
   {
     id: 1,
     items: [
-      {
-        title: 'Datarooms',
-        url: '/datarooms',
-        icon: FolderOpen,
-      },
       {
         title: 'Trash',
         url: '/trash',

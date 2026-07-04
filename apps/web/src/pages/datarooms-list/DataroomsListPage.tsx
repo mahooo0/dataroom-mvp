@@ -1,10 +1,11 @@
 import type { Dataroom } from '@dataroom/shared'
 import { AlertCircle, Plus } from 'lucide-react'
-import { useState } from 'react'
-import { useDatarooms } from '@/entities/dataroom'
+import { useMemo, useState } from 'react'
+import { DATAROOM_ICONS, useDatarooms } from '@/entities/dataroom'
 import { CreateDataroomDialog } from '@/features/create-dataroom'
 import { DeleteDataroomDialog } from '@/features/delete-dataroom'
 import { RenameDataroomDialog } from '@/features/rename-dataroom'
+import { useIconFilterStore } from '@/features/search'
 import { Button } from '@/shared/ui/button'
 import { DataroomsGrid } from '@/widgets/datarooms-list/DataroomsGrid'
 import { DataroomsListSkeleton } from '@/widgets/datarooms-list/DataroomsListSkeleton'
@@ -12,6 +13,12 @@ import { EmptyDatarooms } from '@/widgets/datarooms-list/EmptyDatarooms'
 
 export function DataroomsListPage() {
   const { data: datarooms, isLoading, isError, refetch } = useDatarooms()
+  const iconKey = useIconFilterStore((s) => s.iconKey)
+  const filtered = useMemo(() => {
+    if (!iconKey) return datarooms
+    return datarooms?.filter((d) => d.iconKey === iconKey)
+  }, [datarooms, iconKey])
+  const activeIcon = iconKey ? DATAROOM_ICONS.find((i) => i.key === iconKey) : null
   const [createOpen, setCreateOpen] = useState(false)
   const [renaming, setRenaming] = useState<Dataroom | null>(null)
   const [deleting, setDeleting] = useState<Dataroom | null>(null)
@@ -50,9 +57,13 @@ export function DataroomsListPage() {
         </div>
       ) : !datarooms || datarooms.length === 0 ? (
         <EmptyDatarooms onCreate={() => setCreateOpen(true)} />
+      ) : !filtered || filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed bg-card/50 px-6 py-16 text-center text-sm text-muted-foreground">
+          No datarooms match the {activeIcon?.label ?? 'current'} filter.
+        </div>
       ) : (
         <DataroomsGrid
-          datarooms={datarooms}
+          datarooms={filtered}
           onRename={(dr) => setRenaming(dr)}
           onDelete={(dr) => setDeleting(dr)}
         />

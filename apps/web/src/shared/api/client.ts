@@ -35,7 +35,7 @@ async function parseKyError(err: unknown): Promise<never> {
 
 function baseClient(getToken: () => Promise<string | null>): KyInstance {
   return ky.create({
-    prefixUrl: env.VITE_API_URL,
+    prefix: env.VITE_API_URL,
     timeout: 30_000,
     retry: {
       limit: 1,
@@ -43,15 +43,19 @@ function baseClient(getToken: () => Promise<string | null>): KyInstance {
     },
     hooks: {
       beforeRequest: [
-        async (request) => {
-          const token = await getToken()
-          if (token) {
-            request.headers.set('Authorization', `Bearer ${token}`)
+        async ({ request }) => {
+          try {
+            const token = await getToken()
+            if (token) {
+              request.headers.set('Authorization', `Bearer ${token}`)
+            }
+          } catch {
+            // Clerk session not ready yet; API returns 401 and React Query retries once
           }
         },
       ],
       beforeError: [
-        async (error) => {
+        async ({ error }) => {
           try {
             await parseKyError(error)
           } catch (inner) {

@@ -28,6 +28,7 @@ export function useCreateDataroom() {
         id: tempId,
         name: input.name,
         ownerId: '',
+        iconKey: input.iconKey ?? null,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,

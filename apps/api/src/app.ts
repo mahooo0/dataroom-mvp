@@ -10,10 +10,13 @@ import {
 import { env } from '@/config/env'
 import { clerkAuthPlugin } from '@/plugins/clerk-auth'
 import { errorHandlerPlugin } from '@/plugins/error-handler'
+import { authRoutes } from '@/routes/auth'
 import { dataroomsRoutes } from '@/routes/datarooms'
 import { filesRoutes } from '@/routes/files'
 import { foldersRoutes } from '@/routes/folders'
 import { healthRoutes } from '@/routes/health'
+import { meRoutes } from '@/routes/me'
+import { searchRoutes } from '@/routes/search'
 
 export async function buildApp() {
   const app = Fastify({
@@ -41,9 +44,12 @@ export async function buildApp() {
   await app.register(clerkAuthPlugin)
 
   await app.register(healthRoutes)
+  await app.register(authRoutes)
   await app.register(dataroomsRoutes)
   await app.register(foldersRoutes)
   await app.register(filesRoutes)
+  await app.register(meRoutes)
+  await app.register(searchRoutes)
 
   return app
 }

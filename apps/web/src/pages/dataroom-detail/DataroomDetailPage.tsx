@@ -1,19 +1,23 @@
 import type { FileRecord, Folder } from '@dataroom/shared'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertCircle, FolderPlus, Upload } from 'lucide-react'
+import { FolderPlus } from 'lucide-react'
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useDatarooms } from '@/entities/dataroom'
 import { useFilesInFolder } from '@/entities/file'
-import { childrenOf, findFolder, useFolders } from '@/entities/folder'
+import { childrenOf, useFolders } from '@/entities/folder'
 import { CreateFolderDialog } from '@/features/create-folder'
-import { DeleteFolderDialog } from '@/features/delete-folder'
-import { RenameFolderDialog } from '@/features/rename-folder'
+import { useDeleteFile } from '@/features/delete-file'
+import { RenameFileDialog } from '@/features/rename-file'
+import { UploadingRow, UploadTrigger, UploadZone, useUploadStore } from '@/features/upload-file'
+import { PdfViewerModal } from '@/features/view-pdf'
+import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { DataroomBreadcrumbs } from '@/widgets/breadcrumbs/DataroomBreadcrumbs'
+import type { FolderDragData, FolderDropData } from '@/widgets/app-shell/DragDropRoot'
 import { EmptyFolderPane } from '@/widgets/file-grid/EmptyFolderPane'
 import { FileGrid } from '@/widgets/file-grid/FileGrid'
-import { FolderTree } from '@/widgets/folder-tree/FolderTree'
 
 interface DataroomDetailPageProps {
   dataroomId: string
@@ -23,21 +27,19 @@ interface DataroomDetailPageProps {
 export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageProps) {
   const navigate = useNavigate()
   const { data: datarooms } = useDatarooms()
-  const {
-    data: folders,
-    isLoading: foldersLoading,
-    isError: foldersError,
-    refetch: refetchFolders,
-  } = useFolders(dataroomId)
+  const { data: folders, isLoading: foldersLoading } = useFolders(dataroomId)
   const { data: files, isLoading: filesLoading, isError: filesError } = useFilesInFolder(folderId)
+  const uploadSessions = useUploadStore(
+    useShallow((s) => (folderId ? s.sessions.filter((sess) => sess.folderId === folderId) : [])),
+  )
 
   const dataroom = datarooms?.find((d) => d.id === dataroomId)
-  const currentFolder = findFolder(folders, folderId)
   const canUpload = folderId !== null
 
   const [createParent, setCreateParent] = useState<string | null | undefined>(undefined)
-  const [renaming, setRenaming] = useState<Folder | null>(null)
-  const [deleting, setDeleting] = useState<Folder | null>(null)
+  const [renamingFile, setRenamingFile] = useState<FileRecord | null>(null)
+  const [viewingFile, setViewingFile] = useState<FileRecord | null>(null)
+  const deleteFile = useDeleteFile()
 
   const selectFolder = (id: string | null) => {
     void navigate({
@@ -61,97 +63,76 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
 
   const rootChildFolders = folders ? childrenOf(folders, null) : []
   const currentChildFolders = folders ? childrenOf(folders, folderId) : []
+  const visibleSubfolders = folderId === null ? rootChildFolders : currentChildFolders
+
+  const onFileDelete = (file: FileRecord) =>
+    deleteFile.mutate({ id: file.id, folderId: file.folderId, name: file.name })
 
   return (
-    <div className="grid h-full grid-cols-[280px_1fr]">
-      <aside className="flex flex-col overflow-y-auto border-r bg-muted/20 px-2">
-        <div className="flex items-center justify-between px-2 py-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Folders
-          </h2>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setCreateParent(null)}
-            aria-label="New root folder"
-            className="h-6 w-6"
-          >
-            <FolderPlus className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-        {foldersLoading ? (
-          <div className="space-y-2 px-2">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-5/6" />
-            <Skeleton className="h-6 w-4/6" />
-          </div>
-        ) : foldersError ? (
-          <div className="flex flex-col items-center gap-2 px-2 py-4 text-center text-sm">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            <span className="text-muted-foreground">Couldn&apos;t load folders</span>
-            <Button size="sm" variant="ghost" onClick={() => refetchFolders()}>
-              Retry
-            </Button>
-          </div>
+    <section className="flex h-full flex-col overflow-y-auto">
+      <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b bg-background/95 px-6 py-3 backdrop-blur">
+        <Button variant="outline" onClick={() => setCreateParent(folderId)}>
+          <FolderPlus className="mr-2 h-4 w-4" />
+          New folder
+        </Button>
+        {canUpload && folderId ? (
+          <UploadTrigger folderId={folderId} />
         ) : (
-          <FolderTree
-            folders={folders ?? []}
-            selectedFolderId={folderId}
-            onSelect={selectFolder}
-            onCreateChild={(parentId) => setCreateParent(parentId)}
-            onRename={(f) => setRenaming(f)}
-            onDelete={(f) => setDeleting(f)}
-          />
+          <Button disabled title="Open a folder to upload">
+            Upload
+          </Button>
         )}
-      </aside>
+      </div>
 
-      <section className="flex flex-col overflow-y-auto">
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b bg-background/95 px-6 py-4 backdrop-blur">
-          <DataroomBreadcrumbs
-            dataroomName={dataroom.name}
-            folders={folders ?? []}
-            currentFolderId={folderId}
-            onNavigate={selectFolder}
-          />
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setCreateParent(folderId)}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              New folder
-            </Button>
-            <Button
-              disabled={!canUpload}
-              title={!canUpload ? 'Open a folder to upload' : undefined}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload
-            </Button>
+      <div className="flex-1 px-6 py-6">
+        {filesLoading || (foldersLoading && folderId !== null) ? (
+          <FolderPaneSkeleton />
+        ) : filesError ? (
+          <div className="rounded-xl border border-dashed bg-card/40 p-8 text-center">
+            <p className="text-sm text-destructive">Couldn&apos;t load files in this folder.</p>
           </div>
-        </header>
-
-        <div className="flex-1 px-6 py-6">
-          {filesLoading || (foldersLoading && folderId !== null) ? (
-            <FolderPaneSkeleton />
-          ) : filesError ? (
-            <div className="rounded-xl border border-dashed bg-card/40 p-8 text-center">
-              <p className="text-sm text-destructive">Couldn&apos;t load files in this folder.</p>
-            </div>
-          ) : (
+        ) : canUpload && folderId ? (
+          <UploadZone folderId={folderId} className="min-h-[60vh]">
             <FolderPaneContent
+              dataroomId={dataroomId}
               folderId={folderId}
-              subfolders={folderId === null ? rootChildFolders : currentChildFolders}
+              subfolders={visibleSubfolders}
               files={files ?? []}
+              uploadRows={
+                uploadSessions.length > 0 && (
+                  <section className="space-y-2">
+                    {uploadSessions.map((sess) => (
+                      <UploadingRow key={sess.id} session={sess} />
+                    ))}
+                  </section>
+                )
+              }
               onSelectFolder={selectFolder}
               onCreateFolder={() => setCreateParent(folderId)}
-              onUpload={() => {
-                /* upload in next slice */
-              }}
-              onRenameFile={(_f: FileRecord) => {}}
-              onDeleteFile={(_f: FileRecord) => {}}
-              onOpenFile={(_f: FileRecord) => {}}
+              onUpload={() =>
+                document.querySelector<HTMLInputElement>('input[type="file"]')?.click()
+              }
+              onRenameFile={setRenamingFile}
+              onDeleteFile={onFileDelete}
+              onOpenFile={setViewingFile}
             />
-          )}
-        </div>
-      </section>
+          </UploadZone>
+        ) : (
+          <FolderPaneContent
+            dataroomId={dataroomId}
+            folderId={folderId}
+            subfolders={visibleSubfolders}
+            files={files ?? []}
+            uploadRows={null}
+            onSelectFolder={selectFolder}
+            onCreateFolder={() => setCreateParent(folderId)}
+            onUpload={() => {}}
+            onRenameFile={setRenamingFile}
+            onDeleteFile={onFileDelete}
+            onOpenFile={setViewingFile}
+          />
+        )}
+      </div>
 
       <CreateFolderDialog
         open={createParent !== undefined}
@@ -159,9 +140,9 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
         parentId={createParent ?? null}
         onOpenChange={(open) => !open && setCreateParent(undefined)}
       />
-      <RenameFolderDialog folder={renaming} onClose={() => setRenaming(null)} />
-      <DeleteFolderDialog folder={deleting} onClose={() => setDeleting(null)} />
-    </div>
+      <RenameFileDialog file={renamingFile} onClose={() => setRenamingFile(null)} />
+      <PdfViewerModal file={viewingFile} onClose={() => setViewingFile(null)} />
+    </section>
   )
 }
 
@@ -177,9 +158,11 @@ function FolderPaneSkeleton() {
 }
 
 interface FolderPaneContentProps {
+  dataroomId: string
   folderId: string | null
   subfolders: Folder[]
   files: FileRecord[]
+  uploadRows: React.ReactNode
   onSelectFolder: (id: string) => void
   onCreateFolder: () => void
   onUpload: () => void
@@ -189,9 +172,11 @@ interface FolderPaneContentProps {
 }
 
 function FolderPaneContent({
+  dataroomId,
   folderId,
   subfolders,
   files,
+  uploadRows,
   onSelectFolder,
   onCreateFolder,
   onUpload,
@@ -199,7 +184,8 @@ function FolderPaneContent({
   onDeleteFile,
   onOpenFile,
 }: FolderPaneContentProps) {
-  const isEmpty = subfolders.length === 0 && files.length === 0
+  const hasUploads = !!uploadRows
+  const isEmpty = subfolders.length === 0 && files.length === 0 && !hasUploads
 
   if (isEmpty) {
     return (
@@ -213,6 +199,7 @@ function FolderPaneContent({
 
   return (
     <div className="flex flex-col gap-8">
+      {uploadRows}
       {subfolders.length > 0 && (
         <section className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -220,23 +207,12 @@ function FolderPaneContent({
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {subfolders.map((f) => (
-              <button
+              <FolderCard
                 key={f.id}
-                type="button"
-                onClick={() => onSelectFolder(f.id)}
-                disabled={f.id.startsWith('temp-')}
-                className="flex flex-col items-start gap-3 rounded-xl border bg-card p-4 text-left transition hover:border-primary/60 hover:shadow-sm"
-              >
-                <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                  <FolderPlus className="h-5 w-5" aria-hidden />
-                </div>
-                <div className="w-full">
-                  <h4 className="line-clamp-2 text-sm font-medium">{f.name}</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {(f.childFolderCount ?? 0) + (f.fileCount ?? 0)} items
-                  </p>
-                </div>
-              </button>
+                folder={f}
+                dataroomId={dataroomId}
+                onSelect={() => onSelectFolder(f.id)}
+              />
             ))}
           </div>
         </section>
@@ -255,5 +231,73 @@ function FolderPaneContent({
         </section>
       )}
     </div>
+  )
+}
+
+interface FolderCardProps {
+  folder: Folder
+  dataroomId: string
+  onSelect: () => void
+}
+
+function FolderCard({ folder, dataroomId, onSelect }: FolderCardProps) {
+  const isOptimistic = folder.id.startsWith('temp-')
+  const dragData: FolderDragData = {
+    kind: 'folder',
+    id: folder.id,
+    name: folder.name,
+    dataroomId,
+    parentId: folder.parentId,
+  }
+  const dropData: FolderDropData = {
+    kind: 'folder',
+    folderId: folder.id,
+    dataroomId,
+  }
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+    isDragging,
+  } = useDraggable({
+    id: `folder:${folder.id}`,
+    data: dragData,
+    disabled: isOptimistic,
+  })
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `folder-drop:${folder.id}`,
+    data: dropData,
+    disabled: isOptimistic,
+  })
+
+  const setRef = (node: HTMLElement | null) => {
+    setDragRef(node)
+    setDropRef(node)
+  }
+
+  return (
+    <button
+      ref={setRef}
+      type="button"
+      onClick={onSelect}
+      disabled={isOptimistic}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        'flex flex-col items-start gap-3 rounded-xl border bg-card p-4 text-left transition hover:border-primary/60 hover:shadow-sm cursor-grab active:cursor-grabbing',
+        isDragging && 'opacity-40',
+        isOver && 'border-primary ring-2 ring-primary/30',
+      )}
+    >
+      <div className="rounded-lg bg-primary/10 p-2 text-primary">
+        <FolderPlus className="h-5 w-5" aria-hidden />
+      </div>
+      <div className="w-full">
+        <h4 className="line-clamp-2 text-sm font-medium">{folder.name}</h4>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {(folder.childFolderCount ?? 0) + (folder.fileCount ?? 0)} items
+        </p>
+      </div>
+    </button>
   )
 }

@@ -26,6 +26,8 @@ const envSchema = z.object({
         .map((o) => o.trim())
         .filter(Boolean),
     ),
+
+  USER_QUOTA_BYTES: z.coerce.number().int().positive().default(1_073_741_824),
 })
 
 const parsed = envSchema.safeParse(process.env)

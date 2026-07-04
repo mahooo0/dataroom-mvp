@@ -12,6 +12,7 @@ export const ERROR_CODES = [
   'INVALID_MIME_TYPE',
   'UPLOAD_INCOMPLETE',
   'STORAGE_ERROR',
+  'QUOTA_EXCEEDED',
   'INTERNAL_ERROR',
 ] as const
 
@@ -65,6 +66,8 @@ export const errorStatusFor = (code: ErrorCode): number => {
     case 'FOLDER_NAME_TAKEN':
     case 'FILE_NAME_TAKEN':
       return 409
+    case 'QUOTA_EXCEEDED':
+      return 413
     case 'STORAGE_ERROR':
     case 'INTERNAL_ERROR':
       return 500

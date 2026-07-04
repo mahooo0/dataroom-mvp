@@ -18,16 +18,23 @@ export function useRenameDataroom() {
   const qc = useQueryClient()
 
   return useMutation<Dataroom, unknown, Vars, Context>({
-    mutationFn: async ({ id, name }) => {
-      const raw = await api.patch(`datarooms/${id}`, { json: { name } }).json()
+    mutationFn: async ({ id, name, iconKey }) => {
+      const raw = await api.patch(`datarooms/${id}`, { json: { name, iconKey } }).json()
       return dataroomSchema.parse(raw)
     },
-    onMutate: async ({ id, name }) => {
+    onMutate: async ({ id, name, iconKey }) => {
       await qc.cancelQueries({ queryKey: dataroomKeys.list() })
       const prev = qc.getQueryData<Dataroom[]>(dataroomKeys.list())
       qc.setQueryData<Dataroom[]>(dataroomKeys.list(), (curr) =>
         (curr ?? []).map((d) =>
-          d.id === id ? { ...d, name, updatedAt: new Date().toISOString() } : d,
+          d.id === id
+            ? {
+                ...d,
+                name: name ?? d.name,
+                iconKey: iconKey === undefined ? d.iconKey : iconKey,
+                updatedAt: new Date().toISOString(),
+              }
+            : d,
         ),
       )
       return { prev }

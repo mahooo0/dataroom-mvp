@@ -1,7 +1,8 @@
 import type { Dataroom } from '@dataroom/shared'
 import { Link } from '@tanstack/react-router'
 import { formatDistanceToNow } from 'date-fns'
-import { FolderOpen, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { DataroomOrb } from '@/entities/dataroom'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -28,9 +29,7 @@ export function DataroomCard({ dataroom, onRename, onDelete }: DataroomCardProps
         className="flex flex-col gap-3"
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 text-primary">
-            <FolderOpen className="h-5 w-5" aria-hidden />
-          </div>
+          <DataroomOrb id={dataroom.id} iconKey={dataroom.iconKey} size={40} />
         </div>
         <div className="space-y-1">
           <h3 className="line-clamp-1 font-medium">{dataroom.name}</h3>

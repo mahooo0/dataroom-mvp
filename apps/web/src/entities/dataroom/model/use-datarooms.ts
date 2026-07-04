@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/react'
 import { type Dataroom, dataroomListResponse } from '@dataroom/shared'
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/shared/api/client'
@@ -5,12 +6,14 @@ import { dataroomKeys } from './keys'
 
 export function useDatarooms() {
   const api = useApi()
+  const { isLoaded, isSignedIn } = useAuth()
   return useQuery({
     queryKey: dataroomKeys.list(),
     queryFn: async () => {
       const raw = await api.get('datarooms').json()
       return dataroomListResponse.parse(raw).datarooms
     },
+    enabled: isLoaded && isSignedIn,
   })
 }
 

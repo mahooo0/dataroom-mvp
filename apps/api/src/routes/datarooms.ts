@@ -1,6 +1,8 @@
 import {
   createDataroomInput,
+  DATAROOM_ICON_KEYS,
   DataroomApiError,
+  type DataroomIconKey,
   dataroomListResponse,
   dataroomSchema,
   renameDataroomInput,
@@ -16,11 +18,18 @@ import { mapUniqueViolation } from '@/lib/pg-errors'
 
 const paramsSchema = z.object({ id: z.string().uuid() })
 
+const VALID_ICON_KEYS: ReadonlySet<string> = new Set(DATAROOM_ICON_KEYS)
+
+function normalizeIconKey(raw: string | null): DataroomIconKey | null {
+  return raw && VALID_ICON_KEYS.has(raw) ? (raw as DataroomIconKey) : null
+}
+
 function serializeDataroom(row: typeof datarooms.$inferSelect) {
   return {
     id: row.id,
     name: row.name,
     ownerId: row.ownerId,
+    iconKey: normalizeIconKey(row.iconKey),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     deletedAt: row.deletedAt?.toISOString() ?? null,
@@ -59,7 +68,11 @@ export async function dataroomsRoutes(app: FastifyInstance) {
       try {
         const [row] = await db
           .insert(datarooms)
-          .values({ name: req.body.name, ownerId: req.auth.userId })
+          .values({
+            name: req.body.name,
+            ownerId: req.auth.userId,
+            iconKey: req.body.iconKey ?? null,
+          })
           .returning()
         if (!row) throw new DataroomApiError('INTERNAL_ERROR', 'Insert returned no row', 500)
         reply.code(201)
@@ -81,10 +94,15 @@ export async function dataroomsRoutes(app: FastifyInstance) {
     },
     async (req) => {
       await assertDataroomAccess(req.params.id, req.auth.userId)
+      const patch: { name?: string; iconKey?: string | null; updatedAt: Date } = {
+        updatedAt: new Date(),
+      }
+      if (req.body.name !== undefined) patch.name = req.body.name
+      if (req.body.iconKey !== undefined) patch.iconKey = req.body.iconKey
       try {
         const [row] = await db
           .update(datarooms)
-          .set({ name: req.body.name, updatedAt: new Date() })
+          .set(patch)
           .where(eq(datarooms.id, req.params.id))
           .returning()
         if (!row) throw new DataroomApiError('NOT_FOUND', 'Dataroom not found', 404)

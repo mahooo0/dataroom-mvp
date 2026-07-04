@@ -16,6 +16,8 @@ import { BrandMark } from '@/shared/ui/brand-mark'
 import { NavMain } from './NavMain'
 import { NavUser } from './NavUser'
 import { QuickCreate } from './QuickCreate'
+import { SidebarDatarooms } from './SidebarDatarooms'
+import { StorageMeter } from './StorageMeter'
 
 export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   return (
@@ -39,9 +41,11 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <QuickCreate />
+        <SidebarDatarooms />
         <NavMain items={NAV_ITEMS_LIST} />
       </SidebarContent>
       <SidebarFooter>
+        <StorageMeter />
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

@@ -88,9 +88,9 @@ export async function foldersRoutes(app: FastifyInstance) {
         dataroom_id: string
         parent_id: string | null
         name: string
-        created_at: Date
-        updated_at: Date
-        deleted_at: Date | null
+        created_at: string
+        updated_at: string
+        deleted_at: string | null
         child_folder_count: number
         file_count: number
       }>(sql`
@@ -129,9 +129,9 @@ export async function foldersRoutes(app: FastifyInstance) {
             dataroomId: r.dataroom_id,
             parentId: r.parent_id,
             name: r.name,
-            createdAt: r.created_at,
-            updatedAt: r.updated_at,
-            deletedAt: r.deleted_at,
+            createdAt: new Date(r.created_at),
+            updatedAt: new Date(r.updated_at),
+            deletedAt: r.deleted_at ? new Date(r.deleted_at) : null,
             childFolderCount: r.child_folder_count,
             fileCount: r.file_count,
           }),
