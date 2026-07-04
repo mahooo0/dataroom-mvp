@@ -1,10 +1,16 @@
-import { Link } from '@tanstack/react-router'
+import { useAuth } from '@clerk/react'
+import { Link, Navigate } from '@tanstack/react-router'
 import { SignInWithAppleButton } from '@/features/sign-in-apple/SignInWithAppleButton'
 import { SignInWithGoogleButton } from '@/features/sign-in-google/SignInWithGoogleButton'
 import { SignUpWithCodeForm } from '@/features/sign-up-code/SignUpWithCodeForm'
+import { FullPageSpinner } from '@/shared/ui/full-page-spinner'
 import { AuthLayout } from '@/widgets/auth-layout/AuthLayout'
 
 export function SignUpPage() {
+  const { isLoaded, isSignedIn } = useAuth()
+  if (!isLoaded) return <FullPageSpinner label="Loading…" />
+  if (isSignedIn) return <Navigate to="/datarooms" replace />
+
   return (
     <AuthLayout
       footer={

@@ -1,8 +1,10 @@
+import { useClerk } from '@clerk/react'
 import { useSignUp } from '@clerk/react/legacy'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { type FormEvent, useState } from 'react'
 import { toast } from 'sonner'
+import { isSessionExistsError } from '@/shared/lib/clerk-errors'
 import { GRADIENT_BTN } from '@/shared/lib/styles'
 import { cn } from '@/shared/lib/utils'
 import { Input } from '@/shared/ui/input'
@@ -18,6 +20,7 @@ interface SignUpWithCodeFormProps {
 
 export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCodeFormProps) {
   const { signUp, setActive, isLoaded } = useSignUp()
+  const { signOut } = useClerk()
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>('email')
   const [email, setEmail] = useState('')
@@ -32,9 +35,21 @@ export function SignUpWithCodeForm({ redirectTo = '/datarooms' }: SignUpWithCode
       return
     }
     setPending(true)
-    try {
+    const startFlow = async () => {
       await signUp.create({ emailAddress: email })
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+    }
+    try {
+      try {
+        await startFlow()
+      } catch (err) {
+        if (isSessionExistsError(err)) {
+          await signOut()
+          await startFlow()
+        } else {
+          throw err
+        }
+      }
       setStep('code')
       toast.success(`We sent a code to ${email}`)
     } catch (err) {

@@ -1,8 +1,10 @@
+import { useClerk } from '@clerk/react'
 import { useSignIn } from '@clerk/react/legacy'
 import { useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { type FormEvent, useState } from 'react'
 import { toast } from 'sonner'
+import { isSessionExistsError } from '@/shared/lib/clerk-errors'
 import { GRADIENT_BTN } from '@/shared/lib/styles'
 import { cn } from '@/shared/lib/utils'
 import { Input } from '@/shared/ui/input'
@@ -18,6 +20,7 @@ interface SignInWithCodeFormProps {
 
 export function SignInWithCodeForm({ redirectTo = '/datarooms' }: SignInWithCodeFormProps) {
   const { signIn, setActive, isLoaded } = useSignIn()
+  const { signOut } = useClerk()
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>('email')
   const [email, setEmail] = useState('')
@@ -32,18 +35,28 @@ export function SignInWithCodeForm({ redirectTo = '/datarooms' }: SignInWithCode
       return
     }
     setPending(true)
-    try {
+    const startFlow = async () => {
       const attempt = await signIn.create({ identifier: email })
       const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === 'email_code')
       if (!factor) {
-        toast.error('Email code sign-in is not enabled for this project')
-        setPending(false)
-        return
+        throw new Error('Email code sign-in is not enabled for this project')
       }
       await signIn.prepareFirstFactor({
         strategy: 'email_code',
         emailAddressId: (factor as { emailAddressId: string }).emailAddressId,
       })
+    }
+    try {
+      try {
+        await startFlow()
+      } catch (err) {
+        if (isSessionExistsError(err)) {
+          await signOut()
+          await startFlow()
+        } else {
+          throw err
+        }
+      }
       setStep('code')
       toast.success(`We sent a code to ${email}`)
     } catch (err) {

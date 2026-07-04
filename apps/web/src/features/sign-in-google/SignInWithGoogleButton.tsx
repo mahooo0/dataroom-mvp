@@ -1,6 +1,8 @@
+import { useClerk } from '@clerk/react'
 import { useSignIn } from '@clerk/react/legacy'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { isSessionExistsError } from '@/shared/lib/clerk-errors'
 import { cn } from '@/shared/lib/utils'
 import { GoogleColorIcon } from '@/shared/ui/oauth-icons'
 import { RippleButton } from '@/shared/ui/ripple-button'
@@ -20,18 +22,30 @@ export function SignInWithGoogleButton({
   redirectTo = '/datarooms',
 }: SignInWithGoogleButtonProps) {
   const { signIn, isLoaded } = useSignIn()
+  const { signOut } = useClerk()
   const [pending, setPending] = useState(false)
   const busy = pending || !isLoaded
 
   async function handleClick() {
     if (!isLoaded || !signIn) return
-    try {
-      setPending(true)
-      await signIn.authenticateWithRedirect({
+    setPending(true)
+    const redirect = () =>
+      signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: `${window.location.origin}/sso-callback`,
         redirectUrlComplete: `${window.location.origin}${redirectTo}`,
       })
+    try {
+      try {
+        await redirect()
+      } catch (err) {
+        if (isSessionExistsError(err)) {
+          await signOut()
+          await redirect()
+        } else {
+          throw err
+        }
+      }
     } catch (err) {
       setPending(false)
       console.error('[Google OAuth]', err)
