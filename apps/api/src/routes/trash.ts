@@ -110,6 +110,10 @@ export async function trashRoutes(app: FastifyInstance) {
       const { kind, id } = req.params
       const owner = req.auth.userId
 
+      // DB deletion first, S3 cleanup best-effort after. Reversing this order
+      // creates a window where the row still exists but the S3 object doesn't,
+      // producing dead download links. Orphan S3 objects are recoverable via
+      // a bucket sweep; a DB pointer to nothing is not.
       if (kind === 'file') {
         const row = await db.query.files.findFirst({
           where: eq(files.id, id),
@@ -118,8 +122,8 @@ export async function trashRoutes(app: FastifyInstance) {
         if (!row || row.folder.dataroom.ownerId !== owner || !row.deletedAt) {
           throw new DataroomApiError('NOT_FOUND', 'File not found in trash', 404)
         }
-        await bestEffortDeleteObjects([row.s3Key], req.log)
         await db.delete(files).where(eq(files.id, id))
+        await bestEffortDeleteObjects([row.s3Key], req.log)
         return { ok: true as const }
       }
 
@@ -132,8 +136,8 @@ export async function trashRoutes(app: FastifyInstance) {
           throw new DataroomApiError('NOT_FOUND', 'Folder not found in trash', 404)
         }
         const keys = await collectS3KeysForFolder(id)
-        await bestEffortDeleteObjects(keys, req.log)
         await db.delete(folders).where(eq(folders.id, id))
+        await bestEffortDeleteObjects(keys, req.log)
         return { ok: true as const }
       }
 
@@ -147,8 +151,8 @@ export async function trashRoutes(app: FastifyInstance) {
       })
       if (!row) throw new DataroomApiError('NOT_FOUND', 'Dataroom not found in trash', 404)
       const keys = await collectS3KeysForDataroom(id)
-      await bestEffortDeleteObjects(keys, req.log)
       await db.delete(datarooms).where(eq(datarooms.id, id))
+      await bestEffortDeleteObjects(keys, req.log)
       return { ok: true as const }
     },
   )

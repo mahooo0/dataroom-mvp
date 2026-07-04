@@ -19,7 +19,7 @@ import {
   uploadInitInput,
   uploadInitResponse,
 } from '@dataroom/shared'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
@@ -35,6 +35,8 @@ const fileParams = z.object({ id: z.string().uuid() })
 
 const UPLOAD_URL_TTL_SECONDS = 15 * 60
 const DOWNLOAD_URL_TTL_SECONDS = 60 * 60
+const PENDING_SWEEP_MAX_AGE_MS = 60 * 60 * 1000
+const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d]) // %PDF-
 
 type FileRow = typeof files.$inferSelect
 
@@ -61,6 +63,67 @@ function serializeFile(row: FileRow) {
 function makeS3Key(ownerId: string, dataroomId: string, fileId: string) {
   const ownerHash = createHash('sha256').update(ownerId).digest('hex').slice(0, 12)
   return `${ownerHash}/${dataroomId}/${fileId}.pdf`
+}
+
+/**
+ * Verify the first 5 bytes match `%PDF-`. SigV4 does NOT bind the request body,
+ * so a client can PUT anything to a presigned upload URL — HTML, JS, a rebranded
+ * ZIP. Without this check a shared "PDF" could serve stored-XSS. Cheap ranged GET.
+ */
+async function verifyPdfMagic(s3Key: string): Promise<boolean> {
+  try {
+    const res = await s3ForServerOps.send(
+      new GetObjectCommand({ Bucket: BUCKET, Key: s3Key, Range: 'bytes=0-4' }),
+    )
+    const body = res.Body as { transformToByteArray?: () => Promise<Uint8Array> } | undefined
+    const bytes = body?.transformToByteArray ? await body.transformToByteArray() : new Uint8Array()
+    if (bytes.length < 5) return false
+    return Buffer.from(bytes).slice(0, 5).equals(PDF_MAGIC)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Opportunistic garbage collection of abandoned uploads. Runs inside the quota
+ * transaction so it never races an in-flight init. Prevents pending rows from
+ * silently eating the user's quota when a browser tab dies mid-upload.
+ */
+async function sweepAbandonedPending(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  ownerId: string,
+  logger: import('fastify').FastifyBaseLogger,
+) {
+  const cutoff = new Date(Date.now() - PENDING_SWEEP_MAX_AGE_MS)
+  const stale = await tx.execute<{ id: string; s3_key: string }>(sql`
+    SELECT f.id, f.s3_key
+    FROM files f
+    INNER JOIN folders fo ON fo.id = f.folder_id
+    INNER JOIN datarooms d ON d.id = fo.dataroom_id
+    WHERE d.owner_id = ${ownerId}
+      AND f.status = 'pending'
+      AND f.created_at < ${cutoff}
+  `)
+  const rows = Array.isArray(stale) ? stale : ((stale as unknown as { rows: unknown[] }).rows ?? [])
+  if (rows.length === 0) return
+  const ids: string[] = []
+  const keys: string[] = []
+  for (const r of rows as Array<{ id: string; s3_key: string }>) {
+    ids.push(r.id)
+    keys.push(r.s3_key)
+  }
+  await tx.delete(files).where(and(inArray(files.id, ids), eq(files.status, 'pending')))
+  // Fire-and-forget S3 cleanup after the tx commits — orphan objects are
+  // acceptable; blocking the init call is not.
+  setImmediate(async () => {
+    for (const Key of keys) {
+      try {
+        await s3ForServerOps.send(new DeleteObjectCommand({ Bucket: BUCKET, Key }))
+      } catch (err) {
+        logger.warn({ err, key: Key }, 'sweep: failed to delete abandoned S3 object')
+      }
+    }
+  })
 }
 
 export async function filesRoutes(app: FastifyInstance) {
@@ -126,6 +189,9 @@ export async function filesRoutes(app: FastifyInstance) {
           // Serialize concurrent init calls per owner so the quota check
           // cannot race itself. Lock is released at commit/rollback.
           await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.auth.userId}))`)
+
+          // Reclaim quota from tabs that init'd but never completed.
+          await sweepAbandonedPending(tx, req.auth.userId, req.log)
 
           const [usage] = await tx.execute<{ used: string | number | null }>(sql`
             SELECT COALESCE(SUM(f.size_bytes), 0)::bigint AS used
@@ -230,6 +296,19 @@ export async function filesRoutes(app: FastifyInstance) {
           `Uploaded size (${actualSize}) does not match declared size (${file.sizeBytes}).`,
           400,
         )
+      }
+
+      // Content sniff — the presigned PUT does not bind the request body, so
+      // the client could have uploaded any bytes. If it isn't actually a PDF,
+      // wipe it before it ever gets exposed via a share link.
+      if (!(await verifyPdfMagic(file.s3Key))) {
+        try {
+          await s3ForServerOps.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: file.s3Key }))
+        } catch (err) {
+          req.log.warn({ err, fileId: file.id }, 'Failed to remove non-PDF upload object')
+        }
+        await db.delete(files).where(eq(files.id, req.params.id))
+        throw new DataroomApiError('INVALID_MIME_TYPE', 'Uploaded file is not a valid PDF.', 400)
       }
 
       try {

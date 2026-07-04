@@ -32,6 +32,9 @@ export async function buildApp() {
           }
         : { level: 'info' },
     disableRequestLogging: false,
+    // Behind Traefik/Cloudflare — trust X-Forwarded-For so req.ip is the real client,
+    // not the proxy. Without this all users share one rate-limit bucket.
+    trustProxy: true,
   }).withTypeProvider<ZodTypeProvider>()
 
   app.setValidatorCompiler(validatorCompiler)
@@ -45,7 +48,9 @@ export async function buildApp() {
   })
   await app.register(sensible)
   await app.register(rateLimit, {
-    global: false,
+    global: true,
+    max: 300,
+    timeWindow: '1 minute',
     keyGenerator: (req) => req.auth?.userId ?? req.ip,
   })
   await app.register(errorHandlerPlugin)
