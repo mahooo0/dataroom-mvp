@@ -9,6 +9,7 @@ interface ConflictOpts {
   entity: NameConflictEntity
   attemptedName: string
   onKeepBoth: (newName: string) => void
+  onReplace?: () => void | Promise<void>
 }
 
 /**
@@ -24,6 +25,7 @@ export function handleMutationError(err: unknown, fallback: string, conflict?: C
       attemptedName: conflict.attemptedName,
       suggestion: suggestNextName(conflict.attemptedName),
       onKeepBoth: conflict.onKeepBoth,
+      onReplace: conflict.onReplace,
     })
     return
   }

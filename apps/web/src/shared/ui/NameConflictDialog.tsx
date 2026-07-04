@@ -24,13 +24,18 @@ export function NameConflictDialog() {
   const close = useNameConflictStore((s) => s.close)
 
   const [name, setName] = useState('')
+  const [replacing, setReplacing] = useState(false)
 
   useEffect(() => {
-    if (current) setName(current.suggestion)
+    if (current) {
+      setName(current.suggestion)
+      setReplacing(false)
+    }
   }, [current])
 
   const open = !!current
   const entity = current ? ENTITY_LABEL[current.entity] : 'item'
+  const canReplace = !!current?.onReplace
 
   const onKeepBoth = () => {
     if (!current) return
@@ -40,8 +45,19 @@ export function NameConflictDialog() {
     close()
   }
 
+  const onReplace = async () => {
+    if (!current?.onReplace) return
+    setReplacing(true)
+    try {
+      await current.onReplace()
+      close()
+    } finally {
+      setReplacing(false)
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && close()}>
+    <Dialog open={open} onOpenChange={(o) => !o && !replacing && close()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -50,7 +66,10 @@ export function NameConflictDialog() {
           </DialogTitle>
           <DialogDescription>
             A {entity} named <span className="font-medium">{current?.attemptedName}</span> already
-            exists here. Rename this one and keep both, or cancel.
+            exists here.
+            {canReplace
+              ? ' Replace it, rename this one, or cancel.'
+              : ' Rename this one and keep both, or cancel.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -70,16 +89,23 @@ export function NameConflictDialog() {
           />
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={close}>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button variant="ghost" onClick={close} disabled={replacing}>
             Cancel
           </Button>
-          <Button
-            onClick={onKeepBoth}
-            disabled={!name.trim() || name.trim() === current?.attemptedName}
-          >
-            Keep both
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {canReplace ? (
+              <Button variant="destructive" onClick={onReplace} disabled={replacing}>
+                {replacing ? 'Replacing…' : 'Replace'}
+              </Button>
+            ) : null}
+            <Button
+              onClick={onKeepBoth}
+              disabled={replacing || !name.trim() || name.trim() === current?.attemptedName}
+            >
+              Keep both
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

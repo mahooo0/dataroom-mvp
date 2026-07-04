@@ -7,6 +7,7 @@ export interface NameConflictRequest {
   attemptedName: string
   suggestion: string
   onKeepBoth: (newName: string) => void
+  onReplace?: () => void | Promise<void>
 }
 
 interface NameConflictState {

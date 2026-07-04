@@ -1,5 +1,6 @@
 import {
   ACCEPTED_MIME,
+  type FileRecord,
   MAX_FILE_SIZE_BYTES,
   uploadCompleteResponse,
   uploadInitResponse,
@@ -80,6 +81,30 @@ export function useUploadFile() {
                 fileId: undefined,
               })
               void runUpload({ ...session, name: newName })
+            },
+            onReplace: async () => {
+              // Trash the existing file so the partial unique index frees the name,
+              // then re-init this session under the same name.
+              const cached = qc.getQueryData<FileRecord[]>(fileKeys.inFolder(session.folderId))
+              const existing = cached?.find((f) => f.name === session.name && !f.deletedAt)
+              if (!existing) {
+                toast.error('Could not find the existing file to replace.')
+                return
+              }
+              try {
+                await api.delete(`files/${existing.id}`)
+              } catch (err) {
+                toast.error(apiErrorMessage(err, 'Failed to replace the existing file'))
+                return
+              }
+              await qc.invalidateQueries({ queryKey: fileKeys.inFolder(session.folderId) })
+              useUploadStore.getState().update(session.id, {
+                state: 'uploading',
+                error: undefined,
+                progress: 0,
+                fileId: undefined,
+              })
+              void runUpload(session)
             },
           })
           return
