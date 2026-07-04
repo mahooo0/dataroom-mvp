@@ -7,13 +7,14 @@ import {
   moveFolderInput,
   renameFolderInput,
 } from '@dataroom/shared'
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { db } from '@/db/client'
 import {
   collectDescendantFolderIds,
+  getFolderDescendantCounts,
   isFolderDescendantOf,
   listDataroomFoldersWithCounts,
 } from '@/db/queries'
@@ -181,23 +182,7 @@ export async function foldersRoutes(app: FastifyInstance) {
     },
     async (req) => {
       await assertFolderAccess(req.params.id, req.auth.userId)
-      const rows = await db.execute<{ folder_count: number; file_count: number }>(sql`
-        WITH RECURSIVE descendants AS (
-          SELECT id FROM folders WHERE id = ${req.params.id} AND deleted_at IS NULL
-          UNION ALL
-          SELECT f.id FROM folders f
-          INNER JOIN descendants d ON f.parent_id = d.id
-          WHERE f.deleted_at IS NULL
-        )
-        SELECT
-          ((SELECT COUNT(*) FROM descendants) - 1)::int AS folder_count,
-          (SELECT COUNT(*) FROM files WHERE folder_id IN (SELECT id FROM descendants) AND deleted_at IS NULL AND status = 'ready')::int AS file_count
-      `)
-      const r = rows[0]
-      return {
-        folderCount: Math.max(0, r?.folder_count ?? 0),
-        fileCount: r?.file_count ?? 0,
-      }
+      return getFolderDescendantCounts(req.params.id)
     },
   )
 

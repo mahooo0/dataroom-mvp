@@ -19,13 +19,12 @@ import {
   uploadInitInput,
   uploadInitResponse,
 } from '@dataroom/shared'
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
-import { getOwnerUsedBytes } from '@/db/queries'
 import { files } from '@/db/schema'
 import { assertFileAccess, assertFolderAccess } from '@/lib/ownership'
 import { mapUniqueViolation } from '@/lib/pg-errors'
@@ -86,6 +85,7 @@ export async function filesRoutes(app: FastifyInstance) {
           ),
         )
         .orderBy(desc(files.updatedAt))
+        .limit(1000)
       return { files: rows.map(serializeFile) }
     },
   )
@@ -111,35 +111,53 @@ export async function filesRoutes(app: FastifyInstance) {
 
       const folder = await assertFolderAccess(req.body.folderId, req.auth.userId)
 
-      const usedBytes = await getOwnerUsedBytes(req.auth.userId)
-      if (usedBytes + req.body.sizeBytes > env.USER_QUOTA_BYTES) {
-        throw new DataroomApiError(
-          'QUOTA_EXCEEDED',
-          'Storage limit reached. Delete files or upgrade to add more.',
-          413,
-          { usedBytes, quotaBytes: env.USER_QUOTA_BYTES, attemptedBytes: req.body.sizeBytes },
-        )
-      }
-
       const fileId = randomUUID()
       const s3Key = makeS3Key(req.auth.userId, folder.dataroomId, fileId)
 
       let row: FileRow | undefined
       try {
-        const inserted = await db
-          .insert(files)
-          .values({
-            id: fileId,
-            folderId: req.body.folderId,
-            name: req.body.name,
-            mimeType: req.body.mimeType,
-            sizeBytes: req.body.sizeBytes,
-            s3Key,
-            status: 'pending',
-          })
-          .returning()
-        row = inserted[0]
+        row = await db.transaction(async (tx) => {
+          // Serialize concurrent init calls per owner so the quota check
+          // cannot race itself. Lock is released at commit/rollback.
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.auth.userId}))`)
+
+          const [usage] = await tx.execute<{ used: string | number | null }>(sql`
+            SELECT COALESCE(SUM(f.size_bytes), 0)::bigint AS used
+            FROM files f
+            INNER JOIN folders fo ON fo.id = f.folder_id
+            INNER JOIN datarooms d ON d.id = fo.dataroom_id
+            WHERE d.owner_id = ${req.auth.userId}
+              AND d.deleted_at IS NULL
+              AND fo.deleted_at IS NULL
+              AND f.deleted_at IS NULL
+              AND f.status IN ('ready', 'pending')
+          `)
+          const usedBytes = Number(usage?.used ?? 0)
+          if (usedBytes + req.body.sizeBytes > env.USER_QUOTA_BYTES) {
+            throw new DataroomApiError(
+              'QUOTA_EXCEEDED',
+              'Storage limit reached. Delete files or upgrade to add more.',
+              413,
+              { usedBytes, quotaBytes: env.USER_QUOTA_BYTES, attemptedBytes: req.body.sizeBytes },
+            )
+          }
+
+          const [inserted] = await tx
+            .insert(files)
+            .values({
+              id: fileId,
+              folderId: req.body.folderId,
+              name: req.body.name,
+              mimeType: req.body.mimeType,
+              sizeBytes: req.body.sizeBytes,
+              s3Key,
+              status: 'pending',
+            })
+            .returning()
+          return inserted
+        })
       } catch (err) {
+        if (err instanceof DataroomApiError) throw err
         mapUniqueViolation(err, 'FILE_NAME_TAKEN', 'A file with that name already exists')
       }
       if (!row) throw new DataroomApiError('INTERNAL_ERROR', 'Insert returned no row', 500)
@@ -183,12 +201,27 @@ export async function filesRoutes(app: FastifyInstance) {
         return { file: serializeFile(file) }
       }
 
+      let head: { ContentLength?: number }
       try {
-        await s3ForServerOps.send(new HeadObjectCommand({ Bucket: BUCKET, Key: file.s3Key }))
+        head = await s3ForServerOps.send(new HeadObjectCommand({ Bucket: BUCKET, Key: file.s3Key }))
       } catch {
         throw new DataroomApiError(
           'UPLOAD_INCOMPLETE',
           'Upload was not completed. Please retry.',
+          400,
+        )
+      }
+      const actualSize = head.ContentLength ?? 0
+      if (actualSize !== file.sizeBytes) {
+        try {
+          await s3ForServerOps.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: file.s3Key }))
+        } catch (err) {
+          req.log.warn({ err, fileId: file.id }, 'Failed to remove mismatched upload object')
+        }
+        await db.delete(files).where(eq(files.id, req.params.id))
+        throw new DataroomApiError(
+          'UPLOAD_INCOMPLETE',
+          `Uploaded size (${actualSize}) does not match declared size (${file.sizeBytes}).`,
           400,
         )
       }

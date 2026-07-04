@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { db } from '@/db/client'
-import { fileShares, files, folders } from '@/db/schema'
+import { datarooms, fileShares, files, folders } from '@/db/schema'
 import { BUCKET, s3ForPresign } from '@/services/storage.service'
 
 const tokenParams = z.object({ token: z.string().min(16).max(64) })
@@ -48,12 +48,14 @@ export async function publicSharesRoutes(app: FastifyInstance) {
         })
         .from(files)
         .innerJoin(folders, eq(folders.id, files.folderId))
+        .innerJoin(datarooms, eq(datarooms.id, folders.dataroomId))
         .where(
           and(
             eq(files.id, share.fileId),
             eq(files.status, 'ready'),
             isNull(files.deletedAt),
             isNull(folders.deletedAt),
+            isNull(datarooms.deletedAt),
           ),
         )
         .limit(1)

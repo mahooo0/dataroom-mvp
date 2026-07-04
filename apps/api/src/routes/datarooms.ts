@@ -8,11 +8,12 @@ import {
   dataroomSchema,
   renameDataroomInput,
 } from '@dataroom/shared'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { db } from '@/db/client'
+import { cascadeSoftDeleteDataroom } from '@/db/queries'
 import { datarooms, files, folders } from '@/db/schema'
 import { assertDataroomAccess } from '@/lib/ownership'
 import { mapUniqueViolation } from '@/lib/pg-errors'
@@ -53,6 +54,7 @@ export async function dataroomsRoutes(app: FastifyInstance) {
         .from(datarooms)
         .where(and(eq(datarooms.ownerId, req.auth.userId), isNull(datarooms.deletedAt)))
         .orderBy(desc(datarooms.updatedAt))
+        .limit(500)
       return { datarooms: rows.map(serializeDataroom) }
     },
   )
@@ -138,24 +140,7 @@ export async function dataroomsRoutes(app: FastifyInstance) {
             deleteRoot: true,
           })
           .where(eq(datarooms.id, req.params.id))
-        await tx
-          .update(folders)
-          .set({
-            deletedAt: now,
-            updatedAt: now,
-            deleteBatchId: batchId,
-            deleteRoot: false,
-          })
-          .where(and(eq(folders.dataroomId, req.params.id), isNull(folders.deletedAt)))
-        await tx.execute(sql`
-          UPDATE files
-          SET deleted_at = ${now},
-              updated_at = ${now},
-              delete_batch_id = ${batchId},
-              delete_root = false
-          WHERE deleted_at IS NULL
-            AND folder_id IN (SELECT id FROM folders WHERE dataroom_id = ${req.params.id})
-        `)
+        await cascadeSoftDeleteDataroom(tx, req.params.id, batchId, now)
       })
 
       const [row] = await db.select().from(datarooms).where(eq(datarooms.id, req.params.id))
