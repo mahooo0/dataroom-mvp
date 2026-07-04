@@ -30,7 +30,7 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
                 <div className="relative flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(to_bottom_right,rgba(137,190,255,0.35),rgba(137,190,255,0.95))] text-neutral-900 ring-1 ring-[#89BEFF]/40">
                   <BrandMark className="relative z-10 size-4" />
                 </div>
-                <span className="truncate text-sm font-semibold leading-tight">
+                <span className="truncate text-sm font-semibold leading-tight group-data-[collapsible=icon]:hidden">
                   {APP_CONFIG.name}
                 </span>
               </Link>
