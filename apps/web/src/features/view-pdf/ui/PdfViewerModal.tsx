@@ -19,7 +19,7 @@ interface PdfViewerModalProps {
 
 type ZoomMode = 'fit-width' | 'fit-page' | number
 
-const OPTIONS = { cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/', cMapPacked: true }
+const OPTIONS = { cMapUrl: '/pdfjs-cmaps/', cMapPacked: true }
 
 export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
   const { data: url, refetch, isLoading } = useDownloadUrl(file?.id ?? null)

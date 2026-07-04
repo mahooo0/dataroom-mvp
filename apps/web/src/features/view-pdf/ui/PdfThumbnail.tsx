@@ -11,7 +11,10 @@ interface PdfThumbnailProps {
   width?: number
 }
 
-const OPTIONS = { cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/', cMapPacked: true }
+// cmaps are copied into public/ by `scripts/copy-pdf-assets.mjs` at build time.
+// No third-party CDN in the loading path — safer for a share page a stranger
+// hits, and consistent locally, on Vercel, and offline.
+const OPTIONS = { cMapUrl: '/pdfjs-cmaps/', cMapPacked: true }
 
 /**
  * Lazy first-page preview for a PDF file. Only requests the presigned URL and

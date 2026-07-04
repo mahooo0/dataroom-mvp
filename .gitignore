@@ -45,3 +45,6 @@ docker/volumes/
 # Cache
 .eslintcache
 .vercel
+
+# Generated pdf.js cmaps (self-hosted, copied from pdfjs-dist by prebuild)
+apps/web/public/pdfjs-cmaps/

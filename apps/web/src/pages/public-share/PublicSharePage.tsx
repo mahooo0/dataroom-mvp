@@ -4,6 +4,7 @@ import { Document, Page } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import '@/features/view-pdf/lib/pdf-worker'
+import { formatExpiryShort } from '@/shared/lib/format-expiry'
 import { BrandMark } from '@/shared/ui/brand-mark'
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -13,22 +14,12 @@ interface PublicSharePageProps {
   token: string
 }
 
-const OPTIONS = { cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/', cMapPacked: true }
+const OPTIONS = { cMapUrl: '/pdfjs-cmaps/', cMapPacked: true }
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function formatExpiry(iso: string): string {
-  const diff = new Date(iso).getTime() - Date.now()
-  if (diff <= 0) return 'expired'
-  const minutes = Math.floor(diff / (60 * 1000))
-  if (minutes < 60) return `${Math.max(1, minutes)}m`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 48) return `${hours}h`
-  return `${Math.floor(hours / 24)}d`
 }
 
 export function PublicSharePage({ token }: PublicSharePageProps) {
@@ -112,7 +103,7 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
             <span>{formatSize(data.file.sizeBytes)}</span>
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatExpiry(data.expiresAt)}
+              {formatExpiryShort(data.expiresAt)}
             </span>
           </p>
         </div>

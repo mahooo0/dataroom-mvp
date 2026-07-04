@@ -77,6 +77,20 @@ type PdfCheck = { kind: 'ok' } | { kind: 'not-pdf' } | { kind: 'storage-error'; 
  * hiccup during /complete. Callers must treat storage-error as 5xx, not as
  * "reject the upload".
  */
+function isRangeError(cause: unknown): boolean {
+  if (typeof cause !== 'object' || cause === null) return false
+  const name = (cause as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number } })
+    .name
+  const code = (cause as { Code?: string }).Code
+  const status = (cause as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+  return (
+    name === 'InvalidRange' ||
+    code === 'InvalidRange' ||
+    status === 416 ||
+    name === 'RequestedRangeNotSatisfiable'
+  )
+}
+
 async function verifyPdfMagic(s3Key: string): Promise<PdfCheck> {
   let body: { transformToByteArray?: () => Promise<Uint8Array> } | undefined
   try {
@@ -85,6 +99,10 @@ async function verifyPdfMagic(s3Key: string): Promise<PdfCheck> {
     )
     body = res.Body as typeof body
   } catch (cause) {
+    // MinIO/S3 return InvalidRange (416) when the object is shorter than the
+    // requested range — i.e. the "PDF" is < 5 bytes. That's definitely not a
+    // PDF, not a storage outage, so it must not 502-loop the client.
+    if (isRangeError(cause)) return { kind: 'not-pdf' }
     return { kind: 'storage-error', cause }
   }
   try {
@@ -348,7 +366,11 @@ export async function filesRoutes(app: FastifyInstance) {
           req.log.warn({ err, fileId: file.id }, 'Failed to remove non-PDF upload object')
         }
         await db.delete(files).where(eq(files.id, req.params.id))
-        throw new DataroomApiError('INVALID_MIME_TYPE', 'Uploaded file is not a valid PDF.', 400)
+        throw new DataroomApiError(
+          'INVALID_MIME_TYPE',
+          'Uploaded file is empty or is not a valid PDF.',
+          400,
+        )
       }
 
       try {

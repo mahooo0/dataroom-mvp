@@ -2,6 +2,7 @@ import { type FileRecord, SHARE_TTL_OPTIONS, type ShareTtlKey } from '@dataroom/
 import { Check, Copy, Link2, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { formatExpiryFull } from '@/shared/lib/format-expiry'
 import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 import { Button } from '@/shared/ui/button'
 import {
@@ -21,17 +22,6 @@ import { useCreateShare, useRevokeShare, useShare } from '../model/use-share'
 interface ShareFileDialogProps {
   file: FileRecord | null
   onClose: () => void
-}
-
-function formatExpiry(iso: string): string {
-  const diffMs = new Date(iso).getTime() - Date.now()
-  if (diffMs <= 0) return 'expired'
-  const minutes = Math.floor(diffMs / (60 * 1000))
-  if (minutes < 60) return `expires in ${Math.max(1, minutes)}m`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 48) return `expires in ${hours}h`
-  const days = Math.floor(hours / 24)
-  return `expires in ${days} days`
 }
 
 export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
@@ -99,7 +89,7 @@ export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
               <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Active · {formatExpiry(share.expiresAt)}
+                  Active · {formatExpiryFull(share.expiresAt)}
                 </span>
                 <span className="opacity-60">·</span>
                 <span>
