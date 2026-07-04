@@ -4,6 +4,17 @@ Take-home coding challenge from Acme Corp. Build a Data Room (Google Drive / Dro
 
 Full spec: `TASK.md`
 
+## Live URLs
+
+- Web (Vercel): https://web-psi-ten-28.vercel.app/
+- API (Dokploy): https://api.dataroom.holy-water.app/ — `/health` → 200
+- MinIO public (S3 + console): https://minio.dataroom.holy-water.app/
+- Dokploy dashboard: https://dokploy.holy-water.app/dashboard/projects
+- Dokploy project «Data Room»: `kWyzjDPDWGLtATI9D6hWe`
+  - infra compose (postgres+minio): `P-NNfcBRjc2O20SdGZcfq`, network `dataroom-infra-hokit0_default`
+  - api compose: `Mejog72Y4rOdIvJCcnTDE`, appName `compose-hack-optical-microchip-6uh7so`
+- Traefik network the api joins for routing: `dokploy-network` (external swarm overlay)
+
 ---
 
 ## Priorities (from TASK.md, in strict order)
