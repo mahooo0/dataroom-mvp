@@ -32,7 +32,8 @@ export async function publicSharesRoutes(app: FastifyInstance) {
         response: { 200: publicFileResponse },
       },
     },
-    async (req) => {
+    async (req, reply) => {
+      reply.header('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
       const share = await db.query.fileShares.findFirst({
         where: and(eq(fileShares.token, req.params.token), isNull(fileShares.revokedAt)),
       })

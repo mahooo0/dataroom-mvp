@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -53,8 +53,14 @@ function serializeFile(row: FileRow) {
   }
 }
 
+/**
+ * s3Key layout: `{ownerHash}/{dataroomId}/{fileId}.pdf`. The owner segment is
+ * a 12-char SHA-256 prefix of the Clerk userId — enough for tenant isolation
+ * inside the bucket without leaking the raw Clerk ID via public-share URLs.
+ */
 function makeS3Key(ownerId: string, dataroomId: string, fileId: string) {
-  return `${ownerId}/${dataroomId}/${fileId}.pdf`
+  const ownerHash = createHash('sha256').update(ownerId).digest('hex').slice(0, 12)
+  return `${ownerHash}/${dataroomId}/${fileId}.pdf`
 }
 
 export async function filesRoutes(app: FastifyInstance) {

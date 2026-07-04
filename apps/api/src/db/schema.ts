@@ -32,6 +32,9 @@ export const datarooms = pgTable(
     trashIdx: index('datarooms_trash_idx')
       .on(t.ownerId, t.deleteRoot)
       .where(sql`${t.deletedAt} IS NOT NULL`),
+    uniqueName: uniqueIndex('datarooms_unique_name_idx')
+      .on(t.ownerId, t.name)
+      .where(sql`${t.deletedAt} IS NULL`),
   }),
 )
 
@@ -56,7 +59,11 @@ export const folders = pgTable(
     parentIdx: index('folders_parent_idx').on(t.parentId),
     dataroomIdx: index('folders_dataroom_idx').on(t.dataroomId),
     uniqueName: uniqueIndex('folders_unique_name_idx')
-      .on(t.dataroomId, t.parentId, t.name)
+      .on(
+        t.dataroomId,
+        sql`COALESCE(${t.parentId}, '00000000-0000-0000-0000-000000000000'::uuid)`,
+        t.name,
+      )
       .where(sql`${t.deletedAt} IS NULL`),
     trashIdx: index('folders_trash_idx')
       .on(t.dataroomId, t.deleteRoot)
