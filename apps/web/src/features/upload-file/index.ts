@@ -1,4 +1,5 @@
 export { type UploadSession, useUploadStore } from './model/upload-store'
+export { useEnsureUploadTarget } from './model/use-ensure-upload-target'
 export { useUploadFile } from './model/use-upload-file'
 export { UploadingRow } from './ui/UploadingRow'
-export { UploadTrigger, UploadZone } from './ui/UploadZone'
+export { RootUploadTrigger, RootUploadZone, UploadTrigger, UploadZone } from './ui/UploadZone'

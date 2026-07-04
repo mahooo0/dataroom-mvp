@@ -11,7 +11,14 @@ import { CreateFolderDialog } from '@/features/create-folder'
 import { useDeleteFile } from '@/features/delete-file'
 import { RenameFileDialog } from '@/features/rename-file'
 import { ShareFileDialog } from '@/features/share-file'
-import { UploadingRow, UploadTrigger, UploadZone, useUploadStore } from '@/features/upload-file'
+import {
+  RootUploadTrigger,
+  RootUploadZone,
+  UploadingRow,
+  UploadTrigger,
+  UploadZone,
+  useUploadStore,
+} from '@/features/upload-file'
 import { PdfViewerModal } from '@/features/view-pdf'
 import type { FolderDragData, FolderDropData } from '@/shared/dnd'
 import { cn } from '@/shared/lib/utils'
@@ -35,7 +42,6 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
   )
 
   const dataroom = datarooms?.find((d) => d.id === dataroomId)
-  const canUpload = folderId !== null
 
   const [createParent, setCreateParent] = useState<string | null | undefined>(undefined)
   const [renamingFile, setRenamingFile] = useState<FileRecord | null>(null)
@@ -87,13 +93,10 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
           <span className="sm:hidden">Folder</span>
           <RippleButtonRipples />
         </RippleButton>
-        {canUpload && folderId ? (
+        {folderId ? (
           <UploadTrigger folderId={folderId} />
         ) : (
-          <RippleButton disabled title="Open a folder to upload">
-            Upload
-            <RippleButtonRipples />
-          </RippleButton>
+          <RootUploadTrigger dataroomId={dataroomId} />
         )}
       </div>
 
@@ -104,11 +107,10 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
           <div className="rounded-xl border border-dashed bg-card/40 p-8 text-center">
             <p className="text-sm text-destructive">Couldn&apos;t load files in this folder.</p>
           </div>
-        ) : canUpload && folderId ? (
+        ) : folderId ? (
           <UploadZone folderId={folderId} className="min-h-[60vh]">
             <FolderPaneContent
               dataroomId={dataroomId}
-              folderId={folderId}
               subfolders={visibleSubfolders}
               files={files ?? []}
               uploadRows={
@@ -130,20 +132,21 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
             />
           </UploadZone>
         ) : (
-          <FolderPaneContent
-            dataroomId={dataroomId}
-            folderId={folderId}
-            subfolders={visibleSubfolders}
-            files={files ?? []}
-            uploadRows={null}
-            onSelectFolder={selectFolder}
-            onCreateFolder={() => setCreateParent(folderId)}
-            uploadSlot={null}
-            onRenameFile={setRenamingFile}
-            onShareFile={setSharingFile}
-            onDeleteFile={onFileDelete}
-            onOpenFile={setViewingFile}
-          />
+          <RootUploadZone dataroomId={dataroomId} className="min-h-[60vh]">
+            <FolderPaneContent
+              dataroomId={dataroomId}
+              subfolders={visibleSubfolders}
+              files={files ?? []}
+              uploadRows={null}
+              onSelectFolder={selectFolder}
+              onCreateFolder={() => setCreateParent(folderId)}
+              uploadSlot={<RootUploadTrigger dataroomId={dataroomId} label="Upload PDF" />}
+              onRenameFile={setRenamingFile}
+              onShareFile={setSharingFile}
+              onDeleteFile={onFileDelete}
+              onOpenFile={setViewingFile}
+            />
+          </RootUploadZone>
         )}
       </div>
 
@@ -173,7 +176,6 @@ function FolderPaneSkeleton() {
 
 interface FolderPaneContentProps {
   dataroomId: string
-  folderId: string | null
   subfolders: Folder[]
   files: FileRecord[]
   uploadRows: React.ReactNode
@@ -188,7 +190,6 @@ interface FolderPaneContentProps {
 
 function FolderPaneContent({
   dataroomId,
-  folderId,
   subfolders,
   files,
   uploadRows,
@@ -204,13 +205,7 @@ function FolderPaneContent({
   const isEmpty = subfolders.length === 0 && files.length === 0 && !hasUploads
 
   if (isEmpty) {
-    return (
-      <EmptyFolderPane
-        canUpload={folderId !== null}
-        onCreateFolder={onCreateFolder}
-        uploadSlot={uploadSlot}
-      />
-    )
+    return <EmptyFolderPane canUpload onCreateFolder={onCreateFolder} uploadSlot={uploadSlot} />
   }
 
   return (
