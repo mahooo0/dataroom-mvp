@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { AlertCircle, ChevronLeft, ChevronRight, Clock, Download, Eye } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Document, Page } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
@@ -19,6 +19,14 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatExpiry(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now()
+  if (diff <= 0) return 'expired'
+  const hours = Math.round(diff / (60 * 60 * 1000))
+  if (hours < 48) return `${hours}h`
+  return `${Math.round(hours / 24)}d`
 }
 
 export function PublicSharePage({ token }: PublicSharePageProps) {
@@ -46,7 +54,7 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
   const pageWidth = useMemo(() => Math.min(containerWidth - 32, 1000), [containerWidth])
 
   const downloadFile = useCallback(() => {
-    if (!data?.downloadUrl) return
+    if (!data?.downloadUrl || !data.allowDownload) return
     const a = document.createElement('a')
     a.href = data.downloadUrl
     a.download = data.file.name
@@ -77,11 +85,14 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
         </div>
         <h1 className="text-xl font-semibold">This link is no longer available</h1>
         <p className="text-sm text-muted-foreground">
-          The owner may have revoked access, or the file was deleted.
+          It may have expired, been revoked by the owner, or the file was deleted.
         </p>
       </div>
     )
   }
+
+  const badgeCopy = data.allowDownload ? 'Shared file' : 'View only'
+  const BadgeIcon = data.allowDownload ? Download : Eye
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
@@ -91,8 +102,16 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-medium">{data.file.name}</h1>
-          <p className="text-xs text-muted-foreground">
-            {formatSize(data.file.sizeBytes)} · Read only
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+              <BadgeIcon className="h-2.5 w-2.5" />
+              {badgeCopy}
+            </span>
+            <span>{formatSize(data.file.sizeBytes)}</span>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {formatExpiry(data.expiresAt)}
+            </span>
           </p>
         </div>
         <div className="hidden items-center gap-1 rounded-md border bg-muted/40 px-1 py-0.5 sm:flex">
@@ -120,12 +139,19 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="outline" size="icon" onClick={downloadFile} aria-label="Download">
-          <Download className="h-4 w-4" />
-        </Button>
+        {data.allowDownload ? (
+          <Button variant="outline" size="icon" onClick={downloadFile} aria-label="Download">
+            <Download className="h-4 w-4" />
+          </Button>
+        ) : null}
       </header>
 
-      <div ref={containerRef} className="flex-1 overflow-auto bg-muted/40 p-4 pb-16 sm:pb-4">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: onContextMenu prevents right-click download when share is view-only — no keyboard equivalent required */}
+      <div
+        ref={containerRef}
+        className="relative flex-1 select-none overflow-auto bg-muted/40 p-4 pb-16 sm:pb-4"
+        onContextMenu={data.allowDownload ? undefined : (e) => e.preventDefault()}
+      >
         <div className="mx-auto flex justify-center">
           <Document
             file={data.downloadUrl}
@@ -151,6 +177,13 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
             />
           </Document>
         </div>
+        {data.allowDownload ? null : (
+          <div className="pointer-events-none absolute inset-0 flex items-end justify-end p-6">
+            <div className="rounded-md border bg-background/70 px-2 py-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground backdrop-blur">
+              Confidential · Shared for review
+            </div>
+          </div>
+        )}
       </div>
 
       <footer className="sticky bottom-0 flex items-center justify-center gap-3 border-t bg-background px-3 py-2 sm:hidden">

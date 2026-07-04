@@ -1,7 +1,7 @@
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { DataroomApiError, publicFileResponse } from '@dataroom/shared'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, gt, isNull } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
@@ -34,10 +34,15 @@ export async function publicSharesRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       reply.header('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
+      const now = new Date()
       const share = await db.query.fileShares.findFirst({
-        where: and(eq(fileShares.token, req.params.token), isNull(fileShares.revokedAt)),
+        where: and(
+          eq(fileShares.token, req.params.token),
+          isNull(fileShares.revokedAt),
+          gt(fileShares.expiresAt, now),
+        ),
       })
-      if (!share) throw new DataroomApiError('NOT_FOUND', 'Share not found or revoked', 404)
+      if (!share) throw new DataroomApiError('NOT_FOUND', 'Share not found or expired', 404)
 
       const [row] = await db
         .select({
@@ -63,11 +68,15 @@ export async function publicSharesRoutes(app: FastifyInstance) {
 
       if (!row) throw new DataroomApiError('NOT_FOUND', 'File no longer available', 404)
 
+      // Force response to be treated as PDF regardless of what the browser thinks.
+      // Combined with `%PDF-` magic-check at upload complete, this is defense-in-depth
+      // against a caller trying to serve mislabeled content from a shared link.
       const downloadUrl = await getSignedUrl(
         s3ForPresign,
         new GetObjectCommand({
           Bucket: BUCKET,
           Key: row.s3Key,
+          ResponseContentType: 'application/pdf',
           ResponseContentDisposition: `inline; filename="${encodeURIComponent(row.name)}"`,
         }),
         { expiresIn: DOWNLOAD_URL_TTL_SECONDS },
@@ -82,6 +91,8 @@ export async function publicSharesRoutes(app: FastifyInstance) {
         },
         downloadUrl,
         expiresIn: DOWNLOAD_URL_TTL_SECONDS,
+        allowDownload: share.allowDownload,
+        expiresAt: share.expiresAt.toISOString(),
       }
     },
   )

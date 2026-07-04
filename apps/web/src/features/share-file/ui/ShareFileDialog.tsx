@@ -1,4 +1,4 @@
-import type { FileRecord } from '@dataroom/shared'
+import { type FileRecord, SHARE_TTL_OPTIONS, type ShareTtlKey } from '@dataroom/shared'
 import { Check, Copy, Link2, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -13,12 +13,25 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Switch } from '@/shared/ui/switch'
 import { useCreateShare, useRevokeShare, useShare } from '../model/use-share'
 
 interface ShareFileDialogProps {
   file: FileRecord | null
   onClose: () => void
+}
+
+function formatExpiry(iso: string): string {
+  const d = new Date(iso)
+  const now = Date.now()
+  const diff = d.getTime() - now
+  if (diff <= 0) return 'expired'
+  const hours = Math.round(diff / (60 * 60 * 1000))
+  if (hours < 48) return `expires in ${hours}h`
+  const days = Math.round(hours / 24)
+  return `expires in ${days} days`
 }
 
 export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
@@ -27,6 +40,8 @@ export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
   const create = useCreateShare(fileId ?? '')
   const revoke = useRevokeShare(fileId ?? '')
   const [copied, setCopied] = useState(false)
+  const [ttl, setTtl] = useState<ShareTtlKey>('7d')
+  const [allowDownload, setAllowDownload] = useState(false)
 
   const shareUrl = share?.shareUrl
 
@@ -51,7 +66,7 @@ export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
             Share &quot;{file?.name}&quot;
           </DialogTitle>
           <DialogDescription>
-            Anyone with the link gets read-only access to this file.
+            Anyone with the link can view this file in the browser. Downloads are off by default.
           </DialogDescription>
         </DialogHeader>
 
@@ -81,13 +96,62 @@ export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
                   )}
                 </Button>
               </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Active · {formatExpiry(share.expiresAt)}
+                </span>
+                <span className="opacity-60">·</span>
+                <span>
+                  Download:{' '}
+                  <span className="font-medium">
+                    {share.allowDownload ? 'allowed' : 'view-only'}
+                  </span>
+                </span>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Revoking the link will immediately break access for everyone using it.
+                Revoke to break access immediately, or re-share with different settings.
               </p>
             </>
           ) : (
-            <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center text-sm text-muted-foreground">
-              This file isn&apos;t shared. Generate a link to send to reviewers.
+            <div className="flex flex-col gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="share-ttl" className="text-xs">
+                  Link expires after
+                </Label>
+                <div className="flex gap-1 rounded-md border bg-muted/30 p-0.5">
+                  {SHARE_TTL_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setTtl(opt.key)}
+                      className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition ${
+                        ttl === opt.key
+                          ? 'bg-background shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+                <div className="min-w-0">
+                  <Label htmlFor="share-download" className="text-sm font-medium">
+                    Allow download
+                  </Label>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Off: recipients can only view in the browser. Recommended for confidential
+                    material.
+                  </p>
+                </div>
+                <Switch
+                  id="share-download"
+                  checked={allowDownload}
+                  onCheckedChange={setAllowDownload}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -109,7 +173,10 @@ export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
               Close
             </Button>
             {!share ? (
-              <RippleButton onClick={() => create.mutate()} disabled={create.isPending || !file}>
+              <RippleButton
+                onClick={() => create.mutate({ ttl, allowDownload })}
+                disabled={create.isPending || !file}
+              >
                 <Link2 className="mr-2 h-4 w-4" />
                 {create.isPending ? 'Creating…' : 'Create link'}
                 <RippleButtonRipples />

@@ -111,6 +111,8 @@ export const fileShares = pgTable(
       .references(() => files.id, { onDelete: 'cascade' }),
     token: text('token').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    allowDownload: boolean('allow_download').default(false).notNull(),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
   },
   (t) => ({

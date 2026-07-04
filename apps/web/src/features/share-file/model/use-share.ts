@@ -1,4 +1,10 @@
-import { type Share, shareResponse, shareSchema } from '@dataroom/shared'
+import {
+  type CreateShareInput,
+  DEFAULT_SHARE_TTL_KEY,
+  type Share,
+  shareResponse,
+  shareSchema,
+} from '@dataroom/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useApi } from '@/shared/api/client'
@@ -21,9 +27,18 @@ export function useShare(fileId: string | null) {
 export function useCreateShare(fileId: string) {
   const api = useApi()
   const qc = useQueryClient()
-  return useMutation<Share, unknown, void, { prev: Share | null | undefined }>({
-    mutationFn: async () => {
-      const raw = await api.post(`files/${fileId}/share`).json()
+  return useMutation<
+    Share,
+    unknown,
+    Partial<CreateShareInput> | undefined,
+    { prev: Share | null | undefined }
+  >({
+    mutationFn: async (input) => {
+      const body: CreateShareInput = {
+        ttl: input?.ttl ?? DEFAULT_SHARE_TTL_KEY,
+        allowDownload: input?.allowDownload ?? false,
+      }
+      const raw = await api.post(`files/${fileId}/share`, { json: body }).json()
       return shareSchema.parse(raw)
     },
     onMutate: async () => {
