@@ -42,7 +42,7 @@ export function DataroomCard({ dataroom, onRename, onDelete }: DataroomCardProps
         </div>
       </Link>
 
-      <div className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+      <div className="absolute right-2 top-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

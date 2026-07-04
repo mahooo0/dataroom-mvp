@@ -1,5 +1,5 @@
 import { FolderOpen, Plus } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
+import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 
 interface EmptyDataroomsProps {
   onCreate: () => void
@@ -17,10 +17,11 @@ export function EmptyDatarooms({ onCreate }: EmptyDataroomsProps) {
           Create your first dataroom to start uploading PDFs and organizing them into folders.
         </p>
       </div>
-      <Button onClick={onCreate}>
+      <RippleButton onClick={onCreate}>
         <Plus className="mr-2 h-4 w-4" aria-hidden />
         New dataroom
-      </Button>
+        <RippleButtonRipples />
+      </RippleButton>
     </div>
   )
 }

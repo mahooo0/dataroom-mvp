@@ -13,7 +13,7 @@ import { RenameFileDialog } from '@/features/rename-file'
 import { UploadingRow, UploadTrigger, UploadZone, useUploadStore } from '@/features/upload-file'
 import { PdfViewerModal } from '@/features/view-pdf'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/button'
+import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 import { Skeleton } from '@/shared/ui/skeleton'
 import type { FolderDragData, FolderDropData } from '@/widgets/app-shell/DragDropRoot'
 import { EmptyFolderPane } from '@/widgets/file-grid/EmptyFolderPane'
@@ -70,21 +70,24 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
 
   return (
     <section className="flex h-full flex-col overflow-y-auto">
-      <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b bg-background/95 px-6 py-3 backdrop-blur">
-        <Button variant="outline" onClick={() => setCreateParent(folderId)}>
+      <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
+        <RippleButton variant="outline" onClick={() => setCreateParent(folderId)}>
           <FolderPlus className="mr-2 h-4 w-4" />
-          New folder
-        </Button>
+          <span className="hidden sm:inline">New folder</span>
+          <span className="sm:hidden">Folder</span>
+          <RippleButtonRipples />
+        </RippleButton>
         {canUpload && folderId ? (
           <UploadTrigger folderId={folderId} />
         ) : (
-          <Button disabled title="Open a folder to upload">
+          <RippleButton disabled title="Open a folder to upload">
             Upload
-          </Button>
+            <RippleButtonRipples />
+          </RippleButton>
         )}
       </div>
 
-      <div className="flex-1 px-6 py-6">
+      <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
         {filesLoading || (foldersLoading && folderId !== null) ? (
           <FolderPaneSkeleton />
         ) : filesError ? (

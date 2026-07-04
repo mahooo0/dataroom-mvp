@@ -1,5 +1,5 @@
 import { FolderPlus, Upload } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
+import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 
 interface EmptyFolderPaneProps {
   canUpload: boolean
@@ -23,16 +23,18 @@ export function EmptyFolderPane({ canUpload, onCreateFolder, onUpload }: EmptyFo
             : 'Create a folder to start organizing files.'}
         </p>
       </div>
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={onCreateFolder}>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <RippleButton variant="outline" onClick={onCreateFolder}>
           <FolderPlus className="mr-2 h-4 w-4" aria-hidden />
           New folder
-        </Button>
+          <RippleButtonRipples />
+        </RippleButton>
         {canUpload && (
-          <Button onClick={onUpload}>
+          <RippleButton onClick={onUpload}>
             <Upload className="mr-2 h-4 w-4" aria-hidden />
             Upload PDF
-          </Button>
+            <RippleButtonRipples />
+          </RippleButton>
         )}
       </div>
     </div>

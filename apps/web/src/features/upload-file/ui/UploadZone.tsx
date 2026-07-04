@@ -2,7 +2,7 @@ import { ACCEPTED_MIME } from '@dataroom/shared'
 import { Upload } from 'lucide-react'
 import { type ReactNode, useCallback, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/button'
+import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 import { useUploadFile } from '../model/use-upload-file'
 
 interface UploadZoneProps {
@@ -105,10 +105,11 @@ export function UploadTrigger({ folderId, disabled, label = 'Upload' }: UploadTr
         onChange={onFilesPicked}
         className="hidden"
       />
-      <Button onClick={() => inputRef.current?.click()} disabled={disabled}>
+      <RippleButton onClick={() => inputRef.current?.click()} disabled={disabled}>
         <Upload className="mr-2 h-4 w-4" aria-hidden />
         {label}
-      </Button>
+        <RippleButtonRipples />
+      </RippleButton>
     </>
   )
 }
