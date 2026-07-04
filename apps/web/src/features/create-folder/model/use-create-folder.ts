@@ -1,9 +1,8 @@
 import { type CreateFolderInput, type Folder, folderSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { folderKeys } from '@/entities/folder'
 import { useApi } from '@/shared/api/client'
-import { apiErrorMessage } from '@/shared/lib/api-error'
+import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Context {
   prev?: Folder[]
@@ -14,7 +13,7 @@ export function useCreateFolder() {
   const api = useApi()
   const qc = useQueryClient()
 
-  return useMutation<Folder, unknown, CreateFolderInput, Context>({
+  const mutation = useMutation<Folder, unknown, CreateFolderInput, Context>({
     mutationFn: async (input) => {
       const raw = await api.post('folders', { json: input }).json()
       return folderSchema.parse(raw)
@@ -41,7 +40,11 @@ export function useCreateFolder() {
     },
     onError: (err, input, ctx) => {
       if (ctx?.prev) qc.setQueryData(folderKeys.inDataroom(input.dataroomId), ctx.prev)
-      toast.error(apiErrorMessage(err, 'Failed to create folder'))
+      handleMutationError(err, 'Failed to create folder', {
+        entity: 'folder',
+        attemptedName: input.name,
+        onKeepBoth: (newName) => mutation.mutate({ ...input, name: newName }),
+      })
     },
     onSuccess: (created, input, ctx) => {
       qc.setQueryData<Folder[]>(folderKeys.inDataroom(input.dataroomId), (curr) =>
@@ -52,4 +55,5 @@ export function useCreateFolder() {
       void qc.invalidateQueries({ queryKey: folderKeys.inDataroom(input.dataroomId) })
     },
   })
+  return mutation
 }

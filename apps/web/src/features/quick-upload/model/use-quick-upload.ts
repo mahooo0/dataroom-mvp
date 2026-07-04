@@ -65,12 +65,17 @@ async function createDefaultDataroom(
   api: ReturnType<typeof useApi>,
   qc: ReturnType<typeof useQueryClient>,
 ): Promise<Dataroom> {
-  const raw = await api
-    .post('datarooms', { json: { name: DEFAULT_DATAROOM_NAME, iconKey: null } })
-    .json()
-  const parsed = dataroomSchema.parse(raw)
-  qc.setQueryData<Dataroom[]>(dataroomKeys.list(), (prev) => [parsed, ...(prev ?? [])])
-  return parsed
+  await qc.cancelQueries({ queryKey: dataroomKeys.list() })
+  try {
+    const raw = await api
+      .post('datarooms', { json: { name: DEFAULT_DATAROOM_NAME, iconKey: null } })
+      .json()
+    const parsed = dataroomSchema.parse(raw)
+    qc.setQueryData<Dataroom[]>(dataroomKeys.list(), (prev) => [parsed, ...(prev ?? [])])
+    return parsed
+  } finally {
+    qc.invalidateQueries({ queryKey: dataroomKeys.list() })
+  }
 }
 
 async function ensureFoldersLoaded(
@@ -91,12 +96,20 @@ async function createInboxFolder(
   qc: ReturnType<typeof useQueryClient>,
   dataroomId: string,
 ): Promise<Folder> {
-  const raw = await api
-    .post('folders', {
-      json: { dataroomId, parentId: null, name: INBOX_FOLDER_NAME },
-    })
-    .json()
-  const parsed = folderSchema.parse(raw)
-  qc.setQueryData<Folder[]>(folderKeys.inDataroom(dataroomId), (prev) => [...(prev ?? []), parsed])
-  return parsed
+  await qc.cancelQueries({ queryKey: folderKeys.inDataroom(dataroomId) })
+  try {
+    const raw = await api
+      .post('folders', {
+        json: { dataroomId, parentId: null, name: INBOX_FOLDER_NAME },
+      })
+      .json()
+    const parsed = folderSchema.parse(raw)
+    qc.setQueryData<Folder[]>(folderKeys.inDataroom(dataroomId), (prev) => [
+      ...(prev ?? []),
+      parsed,
+    ])
+    return parsed
+  } finally {
+    qc.invalidateQueries({ queryKey: folderKeys.inDataroom(dataroomId) })
+  }
 }

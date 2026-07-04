@@ -1,6 +1,6 @@
 import type { Folder } from '@dataroom/shared'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { AlertCircle, ChevronRight, FolderOpen, Loader2, Plus } from 'lucide-react'
+import { AlertCircle, ChevronRight, FolderOpen, Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DataroomOrb, useDatarooms } from '@/entities/dataroom'
 import { useFolders } from '@/entities/folder'
@@ -235,9 +235,10 @@ function DataroomFolderSubtree({
 
   if (isLoading) {
     return (
-      <div className="px-4 py-2 text-xs text-muted-foreground">
-        <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
-        Loading…
+      <div className="space-y-1.5 px-4 py-2">
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="h-3.5 w-32" />
+        <Skeleton className="h-3.5 w-20" />
       </div>
     )
   }

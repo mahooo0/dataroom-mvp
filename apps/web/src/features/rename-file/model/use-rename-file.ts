@@ -1,9 +1,8 @@
 import { type FileRecord, fileSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { fileKeys } from '@/entities/file'
 import { useApi } from '@/shared/api/client'
-import { apiErrorMessage } from '@/shared/lib/api-error'
+import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Vars {
   id: string
@@ -19,7 +18,7 @@ export function useRenameFile() {
   const api = useApi()
   const qc = useQueryClient()
 
-  return useMutation<FileRecord, unknown, Vars, Context>({
+  const mutation = useMutation<FileRecord, unknown, Vars, Context>({
     mutationFn: async ({ id, name }) => {
       const raw = await api.patch(`files/${id}`, { json: { name } }).json()
       return fileSchema.parse(raw)
@@ -37,10 +36,15 @@ export function useRenameFile() {
     },
     onError: (err, vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(fileKeys.inFolder(vars.folderId), ctx.prev)
-      toast.error(apiErrorMessage(err, 'Failed to rename file'))
+      handleMutationError(err, 'Failed to rename file', {
+        entity: 'file',
+        attemptedName: vars.name,
+        onKeepBoth: (newName) => mutation.mutate({ ...vars, name: newName }),
+      })
     },
     onSettled: (_data, _err, vars) => {
       void qc.invalidateQueries({ queryKey: fileKeys.inFolder(vars.folderId) })
     },
   })
+  return mutation
 }

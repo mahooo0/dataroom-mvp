@@ -1,9 +1,8 @@
 import { type Folder, folderSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { folderKeys } from '@/entities/folder'
 import { useApi } from '@/shared/api/client'
-import { apiErrorMessage } from '@/shared/lib/api-error'
+import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Vars {
   id: string
@@ -19,7 +18,7 @@ export function useRenameFolder() {
   const api = useApi()
   const qc = useQueryClient()
 
-  return useMutation<Folder, unknown, Vars, Context>({
+  const mutation = useMutation<Folder, unknown, Vars, Context>({
     mutationFn: async ({ id, name }) => {
       const raw = await api.patch(`folders/${id}`, { json: { name } }).json()
       return folderSchema.parse(raw)
@@ -37,10 +36,15 @@ export function useRenameFolder() {
     },
     onError: (err, vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(folderKeys.inDataroom(vars.dataroomId), ctx.prev)
-      toast.error(apiErrorMessage(err, 'Failed to rename folder'))
+      handleMutationError(err, 'Failed to rename folder', {
+        entity: 'folder',
+        attemptedName: vars.name,
+        onKeepBoth: (newName) => mutation.mutate({ ...vars, name: newName }),
+      })
     },
     onSettled: (_data, _err, vars) => {
       void qc.invalidateQueries({ queryKey: folderKeys.inDataroom(vars.dataroomId) })
     },
   })
+  return mutation
 }

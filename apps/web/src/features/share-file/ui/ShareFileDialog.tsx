@@ -1,5 +1,5 @@
 import type { FileRecord } from '@dataroom/shared'
-import { Check, Copy, Link2, Loader2, Share2 } from 'lucide-react'
+import { Check, Copy, Link2, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useCreateShare, useRevokeShare, useShare } from '../model/use-share'
 
 interface ShareFileDialogProps {
@@ -56,9 +57,9 @@ export function ShareFileDialog({ file, onClose }: ShareFileDialogProps) {
 
         <div className="flex flex-col gap-3 py-2">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading share status…
+            <div className="space-y-2">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-3 w-40" />
             </div>
           ) : share ? (
             <>

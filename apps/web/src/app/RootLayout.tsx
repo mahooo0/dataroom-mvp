@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { NameConflictDialog } from '@/shared/ui/NameConflictDialog'
 
 interface RootLayoutProps {
   children: ReactNode
@@ -11,5 +12,10 @@ interface RootLayoutProps {
  * → header shared-layout animation).
  */
 export function RootLayout({ children }: RootLayoutProps) {
-  return <div className="min-h-full">{children}</div>
+  return (
+    <div className="min-h-full">
+      {children}
+      <NameConflictDialog />
+    </div>
+  )
 }

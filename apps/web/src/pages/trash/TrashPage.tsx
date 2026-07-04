@@ -75,6 +75,15 @@ export function TrashPage() {
   const permanent = usePermanentDelete()
   const [confirming, setConfirming] = useState<TrashItem | null>(null)
 
+  const restorePendingId =
+    restore.isPending && restore.variables
+      ? (restore.variables as { item: TrashItem }).item.id
+      : null
+  const deletePendingId =
+    permanent.isPending && permanent.variables
+      ? (permanent.variables as { item: TrashItem }).item.id
+      : null
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-10">
       <header className="flex items-center gap-3">
@@ -114,42 +123,45 @@ export function TrashPage() {
         </div>
       ) : (
         <ul className="divide-y rounded-xl border bg-card">
-          {items.map((item) => (
-            <li
-              key={`${item.kind}:${item.id}`}
-              className="flex items-center gap-3 px-3 py-3 sm:px-4"
-            >
-              <ItemIcon item={item} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {itemSubtitle(item)} · deleted{' '}
-                  {formatDistanceToNow(new Date(item.deletedAt), { addSuffix: true })}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => restore.mutate({ item })}
-                  disabled={restore.isPending || permanent.isPending}
-                >
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                  Restore
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setConfirming(item)}
-                  disabled={restore.isPending || permanent.isPending}
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                  Delete
-                </Button>
-              </div>
-            </li>
-          ))}
+          {items.map((item) => {
+            const rowBusy = restorePendingId === item.id || deletePendingId === item.id
+            return (
+              <li
+                key={`${item.kind}:${item.id}`}
+                className="flex items-center gap-3 px-3 py-3 sm:px-4"
+              >
+                <ItemIcon item={item} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {itemSubtitle(item)} · deleted{' '}
+                    {formatDistanceToNow(new Date(item.deletedAt), { addSuffix: true })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => restore.mutate({ item })}
+                    disabled={rowBusy}
+                  >
+                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    Restore
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirming(item)}
+                    disabled={rowBusy}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                    Delete
+                  </Button>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
 

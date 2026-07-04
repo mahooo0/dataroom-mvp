@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useDeleteFolder } from '../model/use-delete-folder'
 
 interface DeleteFolderDialogProps {
@@ -34,6 +35,7 @@ export function DeleteFolderDialog({ folder, onClose }: DeleteFolderDialogProps)
   const childFolders = counts.data?.folderCount ?? folder?.childFolderCount ?? 0
   const files = counts.data?.fileCount ?? folder?.fileCount ?? 0
   const total = childFolders + files
+  const countsPending = counts.isLoading && !counts.data
 
   return (
     <Dialog open={!!folder} onOpenChange={(open) => !open && onClose()}>
@@ -43,18 +45,21 @@ export function DeleteFolderDialog({ folder, onClose }: DeleteFolderDialogProps)
             <AlertTriangle className="h-5 w-5 text-amber-500" aria-hidden />
             Delete folder?
           </DialogTitle>
-          <DialogDescription>
-            <span>
-              This moves <span className="font-medium">{folder?.name}</span>
-              {total > 0 && (
-                <>
-                  {' '}
-                  and everything inside it — {files} file{files === 1 ? '' : 's'} and {childFolders}{' '}
-                  folder{childFolders === 1 ? '' : 's'}
-                </>
-              )}{' '}
-              to Trash. You can restore it from Trash before permanent deletion.
-            </span>
+          <DialogDescription asChild>
+            <div className="space-y-2">
+              <p>
+                This moves <span className="font-medium">{folder?.name}</span>
+                {!countsPending && total > 0 && (
+                  <>
+                    {' '}
+                    and everything inside it — {files} file{files === 1 ? '' : 's'} and{' '}
+                    {childFolders} folder{childFolders === 1 ? '' : 's'}
+                  </>
+                )}{' '}
+                to Trash. You can restore it from Trash before permanent deletion.
+              </p>
+              {countsPending && <Skeleton className="h-3 w-40" />}
+            </div>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

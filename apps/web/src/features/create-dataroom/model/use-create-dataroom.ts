@@ -1,9 +1,8 @@
 import { type CreateDataroomInput, type Dataroom, dataroomSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { dataroomKeys } from '@/entities/dataroom'
 import { useApi } from '@/shared/api/client'
-import { apiErrorMessage } from '@/shared/lib/api-error'
+import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Context {
   prev?: Dataroom[]
@@ -14,7 +13,7 @@ export function useCreateDataroom() {
   const api = useApi()
   const qc = useQueryClient()
 
-  return useMutation<Dataroom, unknown, CreateDataroomInput, Context>({
+  const mutation = useMutation<Dataroom, unknown, CreateDataroomInput, Context>({
     mutationFn: async (input) => {
       const raw = await api.post('datarooms', { json: input }).json()
       return dataroomSchema.parse(raw)
@@ -36,9 +35,13 @@ export function useCreateDataroom() {
       qc.setQueryData<Dataroom[]>(dataroomKeys.list(), [optimistic, ...(prev ?? [])])
       return { prev, tempId }
     },
-    onError: (err, _input, ctx) => {
+    onError: (err, input, ctx) => {
       if (ctx?.prev) qc.setQueryData(dataroomKeys.list(), ctx.prev)
-      toast.error(apiErrorMessage(err, 'Failed to create dataroom'))
+      handleMutationError(err, 'Failed to create dataroom', {
+        entity: 'dataroom',
+        attemptedName: input.name,
+        onKeepBoth: (newName) => mutation.mutate({ ...input, name: newName }),
+      })
     },
     onSuccess: (created, _input, ctx) => {
       qc.setQueryData<Dataroom[]>(dataroomKeys.list(), (curr) =>
@@ -49,4 +52,5 @@ export function useCreateDataroom() {
       void qc.invalidateQueries({ queryKey: dataroomKeys.list() })
     },
   })
+  return mutation
 }

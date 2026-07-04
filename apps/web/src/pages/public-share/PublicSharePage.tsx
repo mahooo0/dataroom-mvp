@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react'
+import { AlertCircle, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Document, Page } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
@@ -6,6 +6,7 @@ import 'react-pdf/dist/Page/TextLayer.css'
 import '@/features/view-pdf/lib/pdf-worker'
 import { BrandMark } from '@/shared/ui/brand-mark'
 import { Button } from '@/shared/ui/button'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { usePublicShare } from './model/use-public-share'
 
 interface PublicSharePageProps {
@@ -56,8 +57,15 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col gap-3 p-4 sm:p-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-3.5 w-48" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-[80vh] w-full rounded-lg" />
       </div>
     )
   }
@@ -124,8 +132,8 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
             onLoadSuccess={onDocumentLoadSuccess}
             options={OPTIONS}
             loading={
-              <div className="flex h-96 items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="mx-auto w-full max-w-[900px]">
+                <Skeleton className="h-[80vh] w-full rounded-lg" />
               </div>
             }
             error={

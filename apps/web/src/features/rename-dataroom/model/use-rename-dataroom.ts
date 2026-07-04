@@ -1,9 +1,8 @@
 import { type Dataroom, dataroomSchema, type RenameDataroomInput } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { dataroomKeys } from '@/entities/dataroom'
 import { useApi } from '@/shared/api/client'
-import { apiErrorMessage } from '@/shared/lib/api-error'
+import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Vars extends RenameDataroomInput {
   id: string
@@ -17,7 +16,7 @@ export function useRenameDataroom() {
   const api = useApi()
   const qc = useQueryClient()
 
-  return useMutation<Dataroom, unknown, Vars, Context>({
+  const mutation = useMutation<Dataroom, unknown, Vars, Context>({
     mutationFn: async ({ id, name, iconKey }) => {
       const raw = await api.patch(`datarooms/${id}`, { json: { name, iconKey } }).json()
       return dataroomSchema.parse(raw)
@@ -39,12 +38,23 @@ export function useRenameDataroom() {
       )
       return { prev }
     },
-    onError: (err, _vars, ctx) => {
+    onError: (err, vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(dataroomKeys.list(), ctx.prev)
-      toast.error(apiErrorMessage(err, 'Failed to rename dataroom'))
+      handleMutationError(
+        err,
+        'Failed to rename dataroom',
+        vars.name
+          ? {
+              entity: 'dataroom',
+              attemptedName: vars.name,
+              onKeepBoth: (newName) => mutation.mutate({ ...vars, name: newName }),
+            }
+          : undefined,
+      )
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: dataroomKeys.list() })
     },
   })
+  return mutation
 }

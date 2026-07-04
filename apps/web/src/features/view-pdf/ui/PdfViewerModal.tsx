@@ -205,6 +205,7 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
           ) : (
             <div className="mx-auto flex justify-center">
               <Document
+                key={url.url}
                 file={url.url}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={onLoadError}
