@@ -29,6 +29,8 @@ const envSchema = z.object({
     ),
 
   USER_QUOTA_BYTES: z.coerce.number().int().positive().default(1_073_741_824),
+
+  PUBLIC_WEB_URL: z.string().url().default('http://localhost:5173'),
 })
 
 const parsed = envSchema.safeParse(process.env)

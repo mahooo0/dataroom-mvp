@@ -77,8 +77,35 @@ export const files = pgTable(
   }),
 )
 
+export const dataroomShares = pgTable(
+  'dataroom_shares',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    dataroomId: uuid('dataroom_id')
+      .notNull()
+      .references(() => datarooms.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (t) => ({
+    tokenIdx: uniqueIndex('dataroom_shares_token_idx').on(t.token),
+    activeShareIdx: uniqueIndex('dataroom_shares_active_idx')
+      .on(t.dataroomId)
+      .where(sql`${t.revokedAt} IS NULL`),
+  }),
+)
+
 export const dataroomsRelations = relations(datarooms, ({ many }) => ({
   folders: many(folders),
+  shares: many(dataroomShares),
+}))
+
+export const dataroomSharesRelations = relations(dataroomShares, ({ one }) => ({
+  dataroom: one(datarooms, {
+    fields: [dataroomShares.dataroomId],
+    references: [datarooms.id],
+  }),
 }))
 
 export const foldersRelations = relations(folders, ({ one, many }) => ({

@@ -9,6 +9,7 @@ import { RequireAuth } from '@/app/RequireAuth'
 import { RootLayout } from '@/app/RootLayout'
 import { DataroomDetailPage } from '@/pages/dataroom-detail/DataroomDetailPage'
 import { DataroomsListPage } from '@/pages/datarooms-list/DataroomsListPage'
+import { PublicSharePage } from '@/pages/public-share/PublicSharePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { SignInPage } from '@/pages/sign-in/SignInPage'
 import { SignUpPage } from '@/pages/sign-up/SignUpPage'
@@ -45,6 +46,15 @@ const ssoCallbackRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sso-callback',
   component: SsoCallbackPage,
+})
+
+const publicShareRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/share/$token',
+  component: () => {
+    const { token } = publicShareRoute.useParams()
+    return <PublicSharePage token={token} />
+  },
 })
 
 const authedRoute = createRoute({
@@ -89,6 +99,7 @@ const routeTree = rootRoute.addChildren([
   signInRoute,
   signUpRoute,
   ssoCallbackRoute,
+  publicShareRoute,
   authedRoute.addChildren([datroomsListRoute, dataroomDetailRoute, settingsRoute]),
 ])
 

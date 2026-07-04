@@ -16,7 +16,9 @@ import { filesRoutes } from '@/routes/files'
 import { foldersRoutes } from '@/routes/folders'
 import { healthRoutes } from '@/routes/health'
 import { meRoutes } from '@/routes/me'
+import { publicSharesRoutes } from '@/routes/public-shares'
 import { searchRoutes } from '@/routes/search'
+import { sharesRoutes } from '@/routes/shares'
 
 export async function buildApp() {
   const app = Fastify({
@@ -44,12 +46,14 @@ export async function buildApp() {
   await app.register(clerkAuthPlugin)
 
   await app.register(healthRoutes)
+  await app.register(publicSharesRoutes)
   await app.register(authRoutes)
   await app.register(dataroomsRoutes)
   await app.register(foldersRoutes)
   await app.register(filesRoutes)
   await app.register(meRoutes)
   await app.register(searchRoutes)
+  await app.register(sharesRoutes)
 
   return app
 }

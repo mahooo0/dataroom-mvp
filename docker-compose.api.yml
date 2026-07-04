@@ -21,6 +21,7 @@ services:
       S3_BUCKET: ${S3_BUCKET:-dataroom-files}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       USER_QUOTA_BYTES: ${USER_QUOTA_BYTES:-1073741824}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL}
     networks:
       - infra
       - dokploy-network

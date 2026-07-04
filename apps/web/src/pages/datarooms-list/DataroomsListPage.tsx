@@ -6,6 +6,7 @@ import { CreateDataroomDialog } from '@/features/create-dataroom'
 import { DeleteDataroomDialog } from '@/features/delete-dataroom'
 import { RenameDataroomDialog } from '@/features/rename-dataroom'
 import { useIconFilterStore } from '@/features/search'
+import { ShareDataroomDialog } from '@/features/share-dataroom'
 import { RippleButton, RippleButtonRipples } from '@/shared/ui/animate-ui/components/buttons/ripple'
 import { Button } from '@/shared/ui/button'
 import { DataroomsGrid } from '@/widgets/datarooms-list/DataroomsGrid'
@@ -23,6 +24,7 @@ export function DataroomsListPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [renaming, setRenaming] = useState<Dataroom | null>(null)
   const [deleting, setDeleting] = useState<Dataroom | null>(null)
+  const [sharing, setSharing] = useState<Dataroom | null>(null)
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-10">
@@ -68,12 +70,14 @@ export function DataroomsListPage() {
           datarooms={filtered}
           onRename={(dr) => setRenaming(dr)}
           onDelete={(dr) => setDeleting(dr)}
+          onShare={(dr) => setSharing(dr)}
         />
       )}
 
       <CreateDataroomDialog open={createOpen} onOpenChange={setCreateOpen} />
       <RenameDataroomDialog dataroom={renaming} onClose={() => setRenaming(null)} />
       <DeleteDataroomDialog dataroom={deleting} onClose={() => setDeleting(null)} />
+      <ShareDataroomDialog dataroom={sharing} onClose={() => setSharing(null)} />
     </div>
   )
 }

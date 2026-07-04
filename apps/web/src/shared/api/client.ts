@@ -75,3 +75,27 @@ export function useApi(): KyInstance {
   const { getToken } = useAuth()
   return useMemo(() => baseClient(() => getToken()), [getToken])
 }
+
+/**
+ * Ky client without Clerk auth injection — used by the public /share/:token
+ * flow where the caller may be unauthenticated. Prefer useApi() everywhere else.
+ */
+export const publicApi: KyInstance = ky.create({
+  prefix: env.VITE_API_URL,
+  timeout: 30_000,
+  hooks: {
+    beforeError: [
+      async ({ error }) => {
+        try {
+          await parseKyError(error)
+        } catch (inner) {
+          if (inner instanceof ApiFailure) {
+            const wrapped = error as HTTPError & { apiFailure?: ApiFailure }
+            wrapped.apiFailure = inner
+          }
+        }
+        return error
+      },
+    ],
+  },
+})
