@@ -19,7 +19,6 @@ import { ThemeToggle } from '@/widgets/header/ThemeToggle'
 
 const LABELS: Record<string, string> = {
   datarooms: 'Datarooms',
-  trash: 'Trash',
   settings: 'Settings',
 }
 

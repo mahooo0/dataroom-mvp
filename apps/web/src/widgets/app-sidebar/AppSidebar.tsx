@@ -25,15 +25,14 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild tooltip={APP_CONFIG.name}>
               <Link to="/datarooms" className="flex items-center gap-2">
                 <div className="relative flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(to_bottom_right,rgba(137,190,255,0.35),rgba(137,190,255,0.95))] text-neutral-900 ring-1 ring-[#89BEFF]/40">
                   <BrandMark className="relative z-10 size-4" />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{APP_CONFIG.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">Data Room</span>
-                </div>
+                <span className="truncate text-sm font-semibold leading-tight">
+                  {APP_CONFIG.name}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

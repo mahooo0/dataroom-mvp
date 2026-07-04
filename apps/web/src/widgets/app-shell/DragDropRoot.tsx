@@ -8,6 +8,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { FileText, Folder as FolderIcon } from 'lucide-react'
+import { motion } from 'motion/react'
 import { type ReactNode, useState } from 'react'
 import { useMoveFile } from '@/features/move-file'
 import { useMoveFolder } from '@/features/move-folder'
@@ -107,9 +108,14 @@ export function DragDropRoot({ children }: DragDropRootProps) {
 function DragPreview({ data }: { data: DragData }) {
   const Icon = data.kind === 'file' ? FileText : FolderIcon
   return (
-    <div className="pointer-events-none flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm shadow-lg ring-1 ring-black/5">
+    <motion.div
+      initial={{ rotate: 0, scale: 0.95 }}
+      animate={{ rotate: 4, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+      className="pointer-events-none flex origin-center items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm shadow-xl ring-1 ring-black/5"
+    >
       <Icon className="h-4 w-4 text-muted-foreground" />
       <span className="max-w-[180px] truncate font-medium">{data.name}</span>
-    </div>
+    </motion.div>
   )
 }

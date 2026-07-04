@@ -1,4 +1,4 @@
-import { History, type LucideIcon, Settings, Trash2 } from 'lucide-react'
+import { type LucideIcon, Settings } from 'lucide-react'
 
 export interface NavSubItem {
   title: string
@@ -29,17 +29,6 @@ export const navItems: NavGroup[] = [
   {
     id: 1,
     items: [
-      {
-        title: 'Trash',
-        url: '/trash',
-        icon: Trash2,
-      },
-      {
-        title: 'Audit log',
-        url: '/audit-log',
-        icon: History,
-        isNew: true,
-      },
       {
         title: 'Settings',
         url: '/settings',
