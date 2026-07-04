@@ -80,92 +80,112 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
   return (
     <Dialog open={!!file} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="flex h-[92vh] max-w-6xl flex-col gap-0 overflow-hidden p-0 sm:max-w-[95vw]"
+        className="flex h-[100dvh] max-w-6xl flex-col gap-0 overflow-hidden p-0 sm:h-[92vh] sm:max-w-[95vw]"
         showCloseButton={false}
       >
-        <header className="flex items-center justify-between gap-4 border-b bg-background px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <h2 className="truncate text-sm font-medium">{file?.name}</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-1 py-0.5">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
-                disabled={pageNumber <= 1}
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="min-w-[3.5rem] text-center text-xs tabular-nums">
-                {pageNumber} / {numPages || '—'}
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
-                disabled={pageNumber >= numPages}
-                aria-label="Next page"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+        <header className="flex items-center gap-2 border-b bg-background px-3 py-2 sm:px-4 sm:py-3">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <h2 className="min-w-0 flex-1 truncate text-sm font-medium">{file?.name}</h2>
 
-            <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-1 py-0.5">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() =>
-                  setZoom((z) => {
-                    const current = typeof z === 'number' ? z : 1
-                    return Math.max(0.5, current - 0.25)
-                  })
-                }
-                aria-label="Zoom out"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <button
-                type="button"
-                onClick={() => setZoom('fit-width')}
-                className={cn(
-                  'rounded px-2 text-xs',
-                  zoom === 'fit-width' ? 'bg-background' : 'text-muted-foreground',
-                )}
-              >
-                Fit width
-              </button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() =>
-                  setZoom((z) => {
-                    const current = typeof z === 'number' ? z : 1
-                    return Math.min(2, current + 0.25)
-                  })
-                }
-                aria-label="Zoom in"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <Button variant="outline" size="sm" onClick={downloadFile}>
-              <Download className="mr-2 h-4 w-4" />
-              Download
+          <div className="hidden items-center gap-1 rounded-md border bg-muted/40 px-1 py-0.5 sm:flex">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+              disabled={pageNumber <= 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button size="icon" variant="ghost" onClick={onClose} aria-label="Close">
-              <X className="h-4 w-4" />
+            <span className="min-w-[3.5rem] text-center text-xs tabular-nums">
+              {pageNumber} / {numPages || '—'}
+            </span>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+              disabled={pageNumber >= numPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          <div className="hidden items-center gap-1 rounded-md border bg-muted/40 px-1 py-0.5 sm:flex">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() =>
+                setZoom((z) => {
+                  const current = typeof z === 'number' ? z : 1
+                  return Math.max(0.5, current - 0.25)
+                })
+              }
+              aria-label="Zoom out"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => setZoom('fit-width')}
+              className={cn(
+                'rounded px-2 text-xs',
+                zoom === 'fit-width' ? 'bg-background' : 'text-muted-foreground',
+              )}
+            >
+              Fit width
+            </button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() =>
+                setZoom((z) => {
+                  const current = typeof z === 'number' ? z : 1
+                  return Math.min(2, current + 0.25)
+                })
+              }
+              aria-label="Zoom in"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={downloadFile}
+            aria-label="Download"
+            className="shrink-0 sm:hidden"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadFile}
+            className="hidden sm:inline-flex"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download
+          </Button>
         </header>
 
-        <div ref={containerRef} className="relative flex-1 overflow-auto bg-muted/40 p-4">
+        <div
+          ref={containerRef}
+          className="relative flex-1 overflow-auto bg-muted/40 p-4 pb-16 sm:pb-4"
+        >
           {isLoading || !url ? (
             <div className="flex h-full items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -200,6 +220,30 @@ export function PdfViewerModal({ file, onClose }: PdfViewerModalProps) {
             </div>
           )}
         </div>
+
+        <footer className="flex items-center justify-center gap-3 border-t bg-background px-3 py-2 sm:hidden">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+            disabled={pageNumber <= 1}
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <span className="min-w-[4rem] text-center text-sm tabular-nums">
+            {pageNumber} / {numPages || '—'}
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+            disabled={pageNumber >= numPages}
+            aria-label="Next page"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </footer>
       </DialogContent>
     </Dialog>
   )
