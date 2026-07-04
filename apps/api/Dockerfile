@@ -13,4 +13,4 @@ COPY packages/shared ./packages/shared
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["pnpm", "exec", "tsx", "src/server.ts"]
+CMD ["./node_modules/.bin/tsx", "src/server.ts"]
