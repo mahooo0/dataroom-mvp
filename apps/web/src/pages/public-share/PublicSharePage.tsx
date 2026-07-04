@@ -24,9 +24,11 @@ function formatSize(bytes: number): string {
 function formatExpiry(iso: string): string {
   const diff = new Date(iso).getTime() - Date.now()
   if (diff <= 0) return 'expired'
-  const hours = Math.round(diff / (60 * 60 * 1000))
+  const minutes = Math.floor(diff / (60 * 1000))
+  if (minutes < 60) return `${Math.max(1, minutes)}m`
+  const hours = Math.floor(minutes / 60)
   if (hours < 48) return `${hours}h`
-  return `${Math.round(hours / 24)}d`
+  return `${Math.floor(hours / 24)}d`
 }
 
 export function PublicSharePage({ token }: PublicSharePageProps) {

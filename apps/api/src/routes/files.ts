@@ -65,35 +65,48 @@ function makeS3Key(ownerId: string, dataroomId: string, fileId: string) {
   return `${ownerHash}/${dataroomId}/${fileId}.pdf`
 }
 
+type PdfCheck = { kind: 'ok' } | { kind: 'not-pdf' } | { kind: 'storage-error'; cause: unknown }
+
 /**
  * Verify the first 5 bytes match `%PDF-`. SigV4 does NOT bind the request body,
  * so a client can PUT anything to a presigned upload URL — HTML, JS, a rebranded
  * ZIP. Without this check a shared "PDF" could serve stored-XSS. Cheap ranged GET.
+ *
+ * IMPORTANT: distinguish "storage transiently unreachable" from "definitely not a
+ * PDF". Swallowing both into `false` would delete a valid upload on any MinIO
+ * hiccup during /complete. Callers must treat storage-error as 5xx, not as
+ * "reject the upload".
  */
-async function verifyPdfMagic(s3Key: string): Promise<boolean> {
+async function verifyPdfMagic(s3Key: string): Promise<PdfCheck> {
+  let body: { transformToByteArray?: () => Promise<Uint8Array> } | undefined
   try {
     const res = await s3ForServerOps.send(
       new GetObjectCommand({ Bucket: BUCKET, Key: s3Key, Range: 'bytes=0-4' }),
     )
-    const body = res.Body as { transformToByteArray?: () => Promise<Uint8Array> } | undefined
+    body = res.Body as typeof body
+  } catch (cause) {
+    return { kind: 'storage-error', cause }
+  }
+  try {
     const bytes = body?.transformToByteArray ? await body.transformToByteArray() : new Uint8Array()
-    if (bytes.length < 5) return false
-    return Buffer.from(bytes).slice(0, 5).equals(PDF_MAGIC)
-  } catch {
-    return false
+    if (bytes.length < 5) return { kind: 'not-pdf' }
+    return Buffer.from(bytes).slice(0, 5).equals(PDF_MAGIC) ? { kind: 'ok' } : { kind: 'not-pdf' }
+  } catch (cause) {
+    return { kind: 'storage-error', cause }
   }
 }
 
 /**
  * Opportunistic garbage collection of abandoned uploads. Runs inside the quota
- * transaction so it never races an in-flight init. Prevents pending rows from
- * silently eating the user's quota when a browser tab dies mid-upload.
+ * transaction so it never races an in-flight init. Returns the S3 keys of the
+ * rows it deleted so the caller can clean them up AFTER the tx commits — if we
+ * fired `setImmediate` inside the tx and it rolled back, we'd delete objects
+ * for rows that still exist.
  */
 async function sweepAbandonedPending(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   ownerId: string,
-  logger: import('fastify').FastifyBaseLogger,
-) {
+): Promise<string[]> {
   const cutoff = new Date(Date.now() - PENDING_SWEEP_MAX_AGE_MS)
   const stale = await tx.execute<{ id: string; s3_key: string }>(sql`
     SELECT f.id, f.s3_key
@@ -105,7 +118,7 @@ async function sweepAbandonedPending(
       AND f.created_at < ${cutoff}
   `)
   const rows = Array.isArray(stale) ? stale : ((stale as unknown as { rows: unknown[] }).rows ?? [])
-  if (rows.length === 0) return
+  if (rows.length === 0) return []
   const ids: string[] = []
   const keys: string[] = []
   for (const r of rows as Array<{ id: string; s3_key: string }>) {
@@ -113,17 +126,20 @@ async function sweepAbandonedPending(
     keys.push(r.s3_key)
   }
   await tx.delete(files).where(and(inArray(files.id, ids), eq(files.status, 'pending')))
-  // Fire-and-forget S3 cleanup after the tx commits — orphan objects are
-  // acceptable; blocking the init call is not.
-  setImmediate(async () => {
-    for (const Key of keys) {
-      try {
-        await s3ForServerOps.send(new DeleteObjectCommand({ Bucket: BUCKET, Key }))
-      } catch (err) {
-        logger.warn({ err, key: Key }, 'sweep: failed to delete abandoned S3 object')
-      }
+  return keys
+}
+
+async function deleteS3ObjectsBestEffort(
+  keys: string[],
+  logger: import('fastify').FastifyBaseLogger,
+): Promise<void> {
+  for (const Key of keys) {
+    try {
+      await s3ForServerOps.send(new DeleteObjectCommand({ Bucket: BUCKET, Key }))
+    } catch (err) {
+      logger.warn({ err, key: Key }, 'sweep: failed to delete abandoned S3 object')
     }
-  })
+  }
 }
 
 export async function filesRoutes(app: FastifyInstance) {
@@ -184,14 +200,17 @@ export async function filesRoutes(app: FastifyInstance) {
       const s3Key = makeS3Key(req.auth.userId, folder.dataroomId, fileId)
 
       let row: FileRow | undefined
+      let sweptS3Keys: string[] = []
       try {
-        row = await db.transaction(async (tx) => {
+        const result = await db.transaction(async (tx) => {
           // Serialize concurrent init calls per owner so the quota check
           // cannot race itself. Lock is released at commit/rollback.
           await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.auth.userId}))`)
 
-          // Reclaim quota from tabs that init'd but never completed.
-          await sweepAbandonedPending(tx, req.auth.userId, req.log)
+          // Reclaim quota from tabs that init'd but never completed. Keys are
+          // returned so S3 deletion happens after commit — never before, or a
+          // rollback would orphan valid rows.
+          const swept = await sweepAbandonedPending(tx, req.auth.userId)
 
           const [usage] = await tx.execute<{ used: string | number | null }>(sql`
             SELECT COALESCE(SUM(f.size_bytes), 0)::bigint AS used
@@ -226,13 +245,21 @@ export async function filesRoutes(app: FastifyInstance) {
               status: 'pending',
             })
             .returning()
-          return inserted
+          return { inserted, swept }
         })
+        row = result?.inserted
+        sweptS3Keys = result?.swept ?? []
       } catch (err) {
         if (err instanceof DataroomApiError) throw err
         mapUniqueViolation(err, 'FILE_NAME_TAKEN', 'A file with that name already exists')
       }
       if (!row) throw new DataroomApiError('INTERNAL_ERROR', 'Insert returned no row', 500)
+
+      // Commit succeeded; safe to reclaim S3 objects for the rows we just
+      // deleted. Fire-and-forget — failures here are logged, never bubbled.
+      if (sweptS3Keys.length > 0) {
+        void deleteS3ObjectsBestEffort(sweptS3Keys, req.log)
+      }
 
       const uploadUrl = await getSignedUrl(
         s3ForPresign,
@@ -300,8 +327,21 @@ export async function filesRoutes(app: FastifyInstance) {
 
       // Content sniff — the presigned PUT does not bind the request body, so
       // the client could have uploaded any bytes. If it isn't actually a PDF,
-      // wipe it before it ever gets exposed via a share link.
-      if (!(await verifyPdfMagic(file.s3Key))) {
+      // wipe it before it ever gets exposed via a share link. A storage error
+      // here MUST NOT delete the file — the client can safely retry /complete.
+      const check = await verifyPdfMagic(file.s3Key)
+      if (check.kind === 'storage-error') {
+        req.log.warn(
+          { err: check.cause, fileId: file.id },
+          'PDF magic-check aborted; storage transiently unreachable',
+        )
+        throw new DataroomApiError(
+          'STORAGE_ERROR',
+          'Storage temporarily unavailable. Please retry.',
+          502,
+        )
+      }
+      if (check.kind === 'not-pdf') {
         try {
           await s3ForServerOps.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: file.s3Key }))
         } catch (err) {

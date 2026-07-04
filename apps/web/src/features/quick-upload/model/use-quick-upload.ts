@@ -16,12 +16,34 @@ import { apiErrorMessage } from '@/shared/lib/api-error'
 
 const DEFAULT_DATAROOM_NAME = 'My files'
 const INBOX_FOLDER_NAME = 'Inbox'
+const PERSONAL_DATAROOM_STORAGE_KEY = 'dataroom.personal-inbox-id.v1'
 
 /**
- * Google-Drive-style "drop anywhere" upload. Ensures a personal "My files" dataroom
- * with an "Inbox" root folder exists (creating them lazily on first use), then hands
- * the files to the existing upload session store. No progress-tracking here — that's
- * still owned by the standard upload flow.
+ * Persist the "personal" dataroom id in localStorage instead of matching by
+ * name string. Rename by the user then no longer silently spawns a duplicate
+ * on next quick-upload — the id lookup fails, we verify against the server,
+ * and only fall back to creating a fresh personal dataroom if the tracked one
+ * really is gone.
+ */
+function readPersonalId(): string | null {
+  try {
+    return localStorage.getItem(PERSONAL_DATAROOM_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+function writePersonalId(id: string): void {
+  try {
+    localStorage.setItem(PERSONAL_DATAROOM_STORAGE_KEY, id)
+  } catch {
+    /* private mode / storage disabled — recompute next time */
+  }
+}
+
+/**
+ * Google-Drive-style "drop anywhere" upload. Resolves the user's personal
+ * dataroom + its Inbox folder, creating both lazily on first use. No
+ * progress-tracking here — that's still owned by the standard upload flow.
  */
 export function useQuickUpload() {
   const api = useApi()
@@ -33,14 +55,22 @@ export function useQuickUpload() {
     dataroomId: string
     folderId: string
   }> => {
-    const existing = datarooms?.find((d) => d.name === DEFAULT_DATAROOM_NAME)
-    const dataroom = existing ?? (await createDefaultDataroom(api, qc))
+    const trackedId = readPersonalId()
+    let personal: Dataroom | undefined = trackedId
+      ? datarooms?.find((d) => d.id === trackedId)
+      : undefined
 
-    const folders = await ensureFoldersLoaded(api, qc, dataroom.id)
-    const existingInbox = folders.find((f) => f.parentId === null && f.name === INBOX_FOLDER_NAME)
-    const inbox = existingInbox ?? (await createInboxFolder(api, qc, dataroom.id))
+    if (!personal) {
+      personal = await createDefaultDataroom(api, qc)
+      writePersonalId(personal.id)
+    }
 
-    return { dataroomId: dataroom.id, folderId: inbox.id }
+    const folders = await ensureFoldersLoaded(api, qc, personal.id)
+    const inbox =
+      folders.find((f) => f.parentId === null && f.name === INBOX_FOLDER_NAME && !f.deletedAt) ??
+      (await createInboxFolder(api, qc, personal.id))
+
+    return { dataroomId: personal.id, folderId: inbox.id }
   }, [api, datarooms, qc])
 
   const upload = useCallback(

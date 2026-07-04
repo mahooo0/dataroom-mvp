@@ -42,6 +42,17 @@ PDF bytes never touch the API. The browser gets a presigned PUT URL, streams str
 - Partial unique index on `(folderId, name) WHERE status='ready'` — a failed upload never blocks a retry
 - In-browser preview via `react-pdf` (pdf.js) reading the same presigned GET URL
 
+### Sharing — view-only by default, expiring links
+
+Anyone-with-the-link sharing for a single file, but built for M&A: **view-only is the default**, download is a deliberate opt-in per link, and every link carries an expiry (24 hours / 7 days / 30 days). Presigned GET URLs the recipient hits are pinned to `Content-Type: application/pdf` and TTL'd at 5 minutes, so a stolen URL rots fast; the DB expiry is the durable gate.
+
+- View-only mode: no Download button, right-click blocked, a "Confidential — Shared for review" watermark ribbon rendered client-side over the PDF
+- Downloadable mode: owner ticks the switch when creating the link; the public page then shows a Download button
+- Every share shows the current policy back to the owner ("Download: view-only" / "expires in 6d") — no guessing
+- Re-sharing rotates the token: change TTL / download flag = new URL, old one revoked in the same transaction
+
+Honest scope: view-only mode deters casual download, but a determined recipient can still **Print → Save as PDF**, screenshot, or grab the presigned URL from devtools. This tool is here to make the sharing intent unambiguous, not to be exfiltration-proof; DRM was out of scope.
+
 ### Clerk auth — zero custom auth code
 
 Sign-in and sign-up are Clerk-hosted. Google, Apple, and email magic-link work out of the box, so a reviewer can jump in without a pre-shared account. Every API call carries a fresh JWT (60 s TTL, never cached), and every mutating route checks ownership server-side.

@@ -49,9 +49,15 @@ export async function buildApp() {
   await app.register(sensible)
   await app.register(rateLimit, {
     global: true,
-    max: 300,
+    // Bulk uploads issue init+PUT+complete ≈ 3 API calls per file, so 600/min
+    // gives headroom for ~200 files/min per user. Individual expensive routes
+    // (search, upload init) still have per-route overrides below their limits.
+    max: 600,
     timeWindow: '1 minute',
     keyGenerator: (req) => req.auth?.userId ?? req.ip,
+    // Never let a burst of anonymous share views or a runaway health prober
+    // starve orchestrator / Traefik healthchecks.
+    allowList: (req) => req.url === '/health' || req.url === '/ready',
   })
   await app.register(errorHandlerPlugin)
   await app.register(clerkAuthPlugin)

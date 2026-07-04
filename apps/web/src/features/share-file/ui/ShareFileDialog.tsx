@@ -24,13 +24,13 @@ interface ShareFileDialogProps {
 }
 
 function formatExpiry(iso: string): string {
-  const d = new Date(iso)
-  const now = Date.now()
-  const diff = d.getTime() - now
-  if (diff <= 0) return 'expired'
-  const hours = Math.round(diff / (60 * 60 * 1000))
+  const diffMs = new Date(iso).getTime() - Date.now()
+  if (diffMs <= 0) return 'expired'
+  const minutes = Math.floor(diffMs / (60 * 1000))
+  if (minutes < 60) return `expires in ${Math.max(1, minutes)}m`
+  const hours = Math.floor(minutes / 60)
   if (hours < 48) return `expires in ${hours}h`
-  const days = Math.round(hours / 24)
+  const days = Math.floor(hours / 24)
   return `expires in ${days} days`
 }
 
