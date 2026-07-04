@@ -23,14 +23,18 @@ services:
       USER_QUOTA_BYTES: ${USER_QUOTA_BYTES:-1073741824}
     networks:
       - infra
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dataroom-api.rule=Host(`${API_HOST}`)"
       - "traefik.http.routers.dataroom-api.entrypoints=websecure"
       - "traefik.http.routers.dataroom-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.dataroom-api.loadbalancer.server.port=3001"
+      - "traefik.docker.network=dokploy-network"
 
 networks:
   infra:
     external: true
     name: dataroom-infra-hokit0_default
+  dokploy-network:
+    external: true
