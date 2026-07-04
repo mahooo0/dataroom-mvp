@@ -1,5 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { Settings } from 'lucide-react'
+import { Settings, Trash2 } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { APP_CONFIG } from '@/shared/config/app-config'
 import {
@@ -46,6 +46,14 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Trash" isActive={pathname.startsWith('/trash')}>
+                  <Link to="/trash">
+                    <Trash2 />
+                    <span>Trash</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
