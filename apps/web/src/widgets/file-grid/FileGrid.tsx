@@ -1,7 +1,8 @@
 import type { FileRecord } from '@dataroom/shared'
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
-import { FileText, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { PdfThumbnail } from '@/features/view-pdf'
 import type { FileDragData } from '@/shared/dnd'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
@@ -75,9 +76,7 @@ function FileCard({ file, onOpen, onRename, onDelete }: FileCardProps) {
         {...attributes}
         className="flex w-full flex-col items-start gap-3 text-left cursor-grab active:cursor-grabbing"
       >
-        <div className="rounded-lg bg-red-500/10 p-2 text-red-600 dark:text-red-400">
-          <FileText className="h-5 w-5" aria-hidden />
-        </div>
+        <PdfThumbnail fileId={file.id} className="w-full" />
         <div className="w-full">
           <h4 className="line-clamp-2 text-sm font-medium">{file.name}</h4>
           <p className="mt-1 text-xs text-muted-foreground">
