@@ -24,7 +24,8 @@ const envSchema = z.object({
       s
         .split(',')
         .map((o) => o.trim())
-        .filter(Boolean),
+        .filter(Boolean)
+        .map<string | RegExp>((o) => (o.startsWith('re:') ? new RegExp(o.slice(3)) : o)),
     ),
 
   USER_QUOTA_BYTES: z.coerce.number().int().positive().default(1_073_741_824),
