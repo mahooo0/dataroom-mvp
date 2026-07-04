@@ -11,7 +11,7 @@ const rippleButtonVariants = cva(
     variants: {
       variant: {
         gradient:
-          'text-white shadow-sm bg-[linear-gradient(135deg,var(--primary)_0%,color-mix(in_oklab,var(--primary)_75%,var(--foreground))_100%)] hover:brightness-110 dark:hover:brightness-125',
+          'text-primary-foreground shadow-sm bg-[linear-gradient(135deg,var(--primary)_0%,color-mix(in_oklab,var(--primary)_78%,var(--primary-foreground))_100%)] hover:brightness-110 dark:hover:brightness-95',
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
         outline:
           'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
@@ -110,7 +110,7 @@ function RippleButtonRipples({ className }: { className?: string }) {
             animate={{ opacity: 0, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="absolute rounded-full bg-white/40 dark:bg-white/25"
+            className="absolute rounded-full bg-primary-foreground/30"
             style={{
               left: r.x,
               top: r.y,
