@@ -24,7 +24,7 @@ interface CreateDataroomDialogProps {
 
 interface FormData {
   name: string
-  iconKey: DataroomIconKey | null
+  iconKey?: DataroomIconKey | null
 }
 
 const DEFAULT_ICON: DataroomIconKey = 'orb-1'

@@ -1,11 +1,9 @@
-import { type MotionProps, motion } from 'motion/react'
-import type { ComponentProps } from 'react'
+import { type HTMLMotionProps, motion } from 'motion/react'
 import { cn } from '@/shared/lib/utils'
 
 const BRAND_LAYOUT_ID = 'brand-mark'
 
-type BrandMarkProps = ComponentProps<'div'> &
-  Pick<MotionProps, 'transition' | 'initial' | 'animate' | 'exit'>
+type BrandMarkProps = Omit<HTMLMotionProps<'div'>, 'ref'>
 
 /**
  * Same logical logo mounted in multiple places — the shared `layoutId`

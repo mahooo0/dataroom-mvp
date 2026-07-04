@@ -48,7 +48,7 @@ export function SearchDialog() {
     void navigate({
       to: '/datarooms/$dataroomId',
       params: { dataroomId: id },
-      search: folderId ? { folderId } : {},
+      search: { folderId },
     })
   }
 

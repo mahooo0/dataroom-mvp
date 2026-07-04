@@ -6,8 +6,6 @@ export function SsoCallbackPage() {
     <>
       <FullPageSpinner label="Finishing sign-in…" />
       <AuthenticateWithRedirectCallback
-        afterSignInUrl="/datarooms"
-        afterSignUpUrl="/datarooms"
         signInFallbackRedirectUrl="/datarooms"
         signUpFallbackRedirectUrl="/datarooms"
       />

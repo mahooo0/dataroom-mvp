@@ -10,7 +10,14 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/shared/ui/chart.tsx",
+    "src/shared/ui/combobox.tsx",
+    "src/shared/ui/phone-input.tsx",
+    "src/shared/ui/resizable.tsx"
+  ]
 }

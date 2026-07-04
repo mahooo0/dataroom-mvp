@@ -32,7 +32,8 @@ interface ActiveRoute {
 
 function parseActiveRoute(pathname: string, search: string): ActiveRoute {
   const match = pathname.match(/^\/datarooms\/([^/?#]+)/)
-  const dataroomId = match ? decodeURIComponent(match[1]) : null
+  const captured = match?.[1]
+  const dataroomId = captured ? decodeURIComponent(captured) : null
   const folderId = new URLSearchParams(search).get('folderId')
   return { dataroomId, folderId: folderId ?? null }
 }
@@ -157,7 +158,11 @@ export function SidebarDatarooms() {
                       tooltip={dr.name}
                       className="pr-8"
                     >
-                      <Link to="/datarooms/$dataroomId" params={{ dataroomId: dr.id }}>
+                      <Link
+                        to="/datarooms/$dataroomId"
+                        params={{ dataroomId: dr.id }}
+                        search={{ folderId: undefined }}
+                      >
                         <DataroomOrb id={dr.id} iconKey={dr.iconKey} />
                         <span className="truncate">{dr.name}</span>
                       </Link>
@@ -224,7 +229,7 @@ function DataroomFolderSubtree({
     void navigate({
       to: '/datarooms/$dataroomId',
       params: { dataroomId },
-      search: id ? { folderId: id } : {},
+      search: { folderId: id ?? undefined },
     })
   }
 

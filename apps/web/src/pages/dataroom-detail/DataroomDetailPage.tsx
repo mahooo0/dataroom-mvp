@@ -45,7 +45,7 @@ export function DataroomDetailPage({ dataroomId, folderId }: DataroomDetailPageP
     void navigate({
       to: '/datarooms/$dataroomId',
       params: { dataroomId },
-      search: id ? { folderId: id } : {},
+      search: { folderId: id ?? undefined },
       replace: false,
     })
   }

@@ -29,9 +29,10 @@ function humanize(segment: string) {
 
 function parseDataroomRoute(pathname: string, searchStr: string) {
   const match = pathname.match(/^\/datarooms\/([^/?#]+)/)
-  if (!match) return null
+  const captured = match?.[1]
+  if (!captured) return null
   const folderId = new URLSearchParams(searchStr).get('folderId')
-  return { dataroomId: decodeURIComponent(match[1]), folderId }
+  return { dataroomId: decodeURIComponent(captured), folderId }
 }
 
 export function AppHeader() {
@@ -75,7 +76,7 @@ export function AppHeader() {
             void navigate({
               to: '/datarooms/$dataroomId',
               params: { dataroomId: dataroomRoute.dataroomId },
-              search: folderId ? { folderId } : {},
+              search: { folderId: folderId ?? undefined },
             })
           }
         />

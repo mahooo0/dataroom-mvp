@@ -25,6 +25,7 @@ export function DataroomCard({ dataroom, onRename, onDelete }: DataroomCardProps
       <Link
         to="/datarooms/$dataroomId"
         params={{ dataroomId: dataroom.id }}
+        search={{ folderId: undefined }}
         disabled={isOptimistic}
         className="flex flex-col gap-3"
       >

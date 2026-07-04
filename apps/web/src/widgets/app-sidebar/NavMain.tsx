@@ -148,7 +148,8 @@ function NavItemCollapsed({
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start" className="min-w-48 space-y-1">
           {item.subItems?.map((subItem) => (
-            <DropdownMenuItem key={subItem.title} asChild>
+            // biome-ignore lint/suspicious/noExplicitAny: animate-ui DropdownMenuItem accepts asChild at runtime but doesn't type it
+            <DropdownMenuItem key={subItem.title} {...({ asChild: true } as any)}>
               <SidebarMenuSubButton
                 asChild
                 className="focus-visible:ring-0"

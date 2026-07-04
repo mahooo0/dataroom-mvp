@@ -23,8 +23,8 @@ interface RenameDataroomDialogProps {
 }
 
 interface FormData {
-  name: string
-  iconKey: DataroomIconKey | null
+  name?: string
+  iconKey?: DataroomIconKey | null
 }
 
 export function RenameDataroomDialog({ dataroom, onClose }: RenameDataroomDialogProps) {
