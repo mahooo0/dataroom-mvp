@@ -1,7 +1,7 @@
 import { type CreateFolderInput, type Folder, folderSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { folderKeys } from '@/entities/folder'
-import { useApi } from '@/shared/api/client'
+import { ApiFailure, useApi } from '@/shared/api/client'
 import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Context {
@@ -15,6 +15,21 @@ export function useCreateFolder() {
 
   const mutation = useMutation<Folder, unknown, CreateFolderInput, Context>({
     mutationFn: async (input) => {
+      // Client-side precheck against the query cache so a duplicate name
+      // opens the modal immediately without a 409 round-trip. `onError`
+      // still handles cross-tab races where the cache is stale.
+      const cached = qc.getQueryData<Folder[]>(folderKeys.inDataroom(input.dataroomId)) ?? []
+      if (
+        cached.some((f) => f.parentId === input.parentId && f.name === input.name && !f.deletedAt)
+      ) {
+        throw new ApiFailure(
+          {
+            code: 'FOLDER_NAME_TAKEN',
+            message: 'A folder with that name already exists here',
+          },
+          409,
+        )
+      }
       const raw = await api.post('folders', { json: input }).json()
       return folderSchema.parse(raw)
     },

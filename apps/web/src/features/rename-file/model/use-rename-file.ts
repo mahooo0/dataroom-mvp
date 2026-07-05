@@ -1,7 +1,7 @@
 import { type FileRecord, fileSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fileKeys } from '@/entities/file'
-import { useApi } from '@/shared/api/client'
+import { ApiFailure, useApi } from '@/shared/api/client'
 import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Vars {
@@ -19,7 +19,17 @@ export function useRenameFile() {
   const qc = useQueryClient()
 
   const mutation = useMutation<FileRecord, unknown, Vars, Context>({
-    mutationFn: async ({ id, name }) => {
+    mutationFn: async ({ id, folderId, name }) => {
+      const cached = qc.getQueryData<FileRecord[]>(fileKeys.inFolder(folderId)) ?? []
+      if (cached.some((f) => f.id !== id && f.name === name && !f.deletedAt)) {
+        throw new ApiFailure(
+          {
+            code: 'FILE_NAME_TAKEN',
+            message: 'A file with that name already exists',
+          },
+          409,
+        )
+      }
       const raw = await api.patch(`files/${id}`, { json: { name } }).json()
       return fileSchema.parse(raw)
     },

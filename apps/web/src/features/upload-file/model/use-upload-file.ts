@@ -10,7 +10,7 @@ import { useCallback } from 'react'
 import { toast } from 'sonner'
 import { fileKeys } from '@/entities/file'
 import { usageKeys } from '@/entities/usage'
-import { useApi } from '@/shared/api/client'
+import { ApiFailure, useApi } from '@/shared/api/client'
 import { apiErrorMessage, toApiFailure } from '@/shared/lib/api-error'
 import { useNameConflictStore } from '@/shared/lib/name-conflict-store'
 import { suggestNextName } from '@/shared/lib/next-name'
@@ -50,6 +50,16 @@ export function useUploadFile() {
     async (session: UploadSession) => {
       let initRaw: unknown
       try {
+        // Client-side precheck against the query cache — a duplicate name
+        // opens the conflict modal immediately without hitting /files/init.
+        // Server-side stays authoritative for the cross-tab race case below.
+        const cachedFiles = qc.getQueryData<FileRecord[]>(fileKeys.inFolder(session.folderId)) ?? []
+        if (cachedFiles.some((f) => f.name === session.name && !f.deletedAt)) {
+          throw new ApiFailure(
+            { code: 'FILE_NAME_TAKEN', message: 'A file with that name already exists' },
+            409,
+          )
+        }
         initRaw = await api
           .post('files/init', {
             json: {

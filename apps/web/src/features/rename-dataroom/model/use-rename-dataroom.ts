@@ -1,7 +1,7 @@
 import { type Dataroom, dataroomSchema, type RenameDataroomInput } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { dataroomKeys } from '@/entities/dataroom'
-import { useApi } from '@/shared/api/client'
+import { ApiFailure, useApi } from '@/shared/api/client'
 import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Vars extends RenameDataroomInput {
@@ -18,6 +18,18 @@ export function useRenameDataroom() {
 
   const mutation = useMutation<Dataroom, unknown, Vars, Context>({
     mutationFn: async ({ id, name, iconKey }) => {
+      if (name) {
+        const cached = qc.getQueryData<Dataroom[]>(dataroomKeys.list()) ?? []
+        if (cached.some((d) => d.id !== id && d.name === name && !d.deletedAt)) {
+          throw new ApiFailure(
+            {
+              code: 'DATAROOM_NAME_TAKEN',
+              message: 'A dataroom with that name already exists',
+            },
+            409,
+          )
+        }
+      }
       const raw = await api.patch(`datarooms/${id}`, { json: { name, iconKey } }).json()
       return dataroomSchema.parse(raw)
     },

@@ -1,7 +1,7 @@
 import { type Folder, folderSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { folderKeys } from '@/entities/folder'
-import { useApi } from '@/shared/api/client'
+import { ApiFailure, useApi } from '@/shared/api/client'
 import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Vars {
@@ -19,7 +19,23 @@ export function useRenameFolder() {
   const qc = useQueryClient()
 
   const mutation = useMutation<Folder, unknown, Vars, Context>({
-    mutationFn: async ({ id, name }) => {
+    mutationFn: async ({ id, dataroomId, name }) => {
+      const cached = qc.getQueryData<Folder[]>(folderKeys.inDataroom(dataroomId)) ?? []
+      const self = cached.find((f) => f.id === id)
+      if (
+        self &&
+        cached.some(
+          (f) => f.id !== id && f.parentId === self.parentId && f.name === name && !f.deletedAt,
+        )
+      ) {
+        throw new ApiFailure(
+          {
+            code: 'FOLDER_NAME_TAKEN',
+            message: 'A folder with that name already exists here',
+          },
+          409,
+        )
+      }
       const raw = await api.patch(`folders/${id}`, { json: { name } }).json()
       return folderSchema.parse(raw)
     },

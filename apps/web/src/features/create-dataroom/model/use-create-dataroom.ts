@@ -1,7 +1,7 @@
 import { type CreateDataroomInput, type Dataroom, dataroomSchema } from '@dataroom/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { dataroomKeys } from '@/entities/dataroom'
-import { useApi } from '@/shared/api/client'
+import { ApiFailure, useApi } from '@/shared/api/client'
 import { handleMutationError } from '@/shared/lib/handle-mutation-error'
 
 interface Context {
@@ -15,6 +15,16 @@ export function useCreateDataroom() {
 
   const mutation = useMutation<Dataroom, unknown, CreateDataroomInput, Context>({
     mutationFn: async (input) => {
+      const cached = qc.getQueryData<Dataroom[]>(dataroomKeys.list()) ?? []
+      if (cached.some((d) => d.name === input.name && !d.deletedAt)) {
+        throw new ApiFailure(
+          {
+            code: 'DATAROOM_NAME_TAKEN',
+            message: 'A dataroom with that name already exists',
+          },
+          409,
+        )
+      }
       const raw = await api.post('datarooms', { json: input }).json()
       return dataroomSchema.parse(raw)
     },
