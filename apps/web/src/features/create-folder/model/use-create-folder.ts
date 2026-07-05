@@ -18,9 +18,18 @@ export function useCreateFolder() {
       // Client-side precheck against the query cache so a duplicate name
       // opens the modal immediately without a 409 round-trip. `onError`
       // still handles cross-tab races where the cache is stale.
+      // NOTE: skip `temp-*` rows — those are the current mutation's own
+      // optimistic insert added by onMutate; matching against them would
+      // 409 every single create.
       const cached = qc.getQueryData<Folder[]>(folderKeys.inDataroom(input.dataroomId)) ?? []
       if (
-        cached.some((f) => f.parentId === input.parentId && f.name === input.name && !f.deletedAt)
+        cached.some(
+          (f) =>
+            !f.id.startsWith('temp-') &&
+            f.parentId === input.parentId &&
+            f.name === input.name &&
+            !f.deletedAt,
+        )
       ) {
         throw new ApiFailure(
           {

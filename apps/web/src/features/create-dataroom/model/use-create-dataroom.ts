@@ -15,8 +15,10 @@ export function useCreateDataroom() {
 
   const mutation = useMutation<Dataroom, unknown, CreateDataroomInput, Context>({
     mutationFn: async (input) => {
+      // Skip `temp-*` rows — that's the current mutation's own optimistic
+      // insert added by onMutate. Matching against it would 409 every create.
       const cached = qc.getQueryData<Dataroom[]>(dataroomKeys.list()) ?? []
-      if (cached.some((d) => d.name === input.name && !d.deletedAt)) {
+      if (cached.some((d) => !d.id.startsWith('temp-') && d.name === input.name && !d.deletedAt)) {
         throw new ApiFailure(
           {
             code: 'DATAROOM_NAME_TAKEN',
