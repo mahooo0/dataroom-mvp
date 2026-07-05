@@ -63,28 +63,28 @@ export function useUploadFile() {
       } catch (err) {
         const failure = toApiFailure(err)
         if (failure?.code === 'FILE_NAME_TAKEN') {
-          useUploadStore.getState().update(session.id, {
-            state: 'error',
-            error: 'A file with that name already exists',
-            abort: undefined,
-          })
+          // The dialog is the whole UI for a name conflict — the row would
+          // just repeat what the modal already says with an alarming red bar.
+          // Drop the row; Keep-both / Replace will re-add a fresh one.
+          useUploadStore.getState().remove(session.id)
           useNameConflictStore.getState().open({
             entity: 'file',
             attemptedName: session.name,
             suggestion: suggestNextName(session.name),
             onKeepBoth: (newName) => {
-              useUploadStore.getState().update(session.id, {
+              const restarted: UploadSession = {
+                ...session,
                 name: newName,
+                progress: 0,
                 state: 'uploading',
                 error: undefined,
-                progress: 0,
                 fileId: undefined,
-              })
-              void runUpload({ ...session, name: newName })
+                abort: undefined,
+              }
+              useUploadStore.getState().add(restarted)
+              void runUpload(restarted)
             },
             onReplace: async () => {
-              // Trash the existing file so the partial unique index frees the name,
-              // then re-init this session under the same name.
               const cached = qc.getQueryData<FileRecord[]>(fileKeys.inFolder(session.folderId))
               const existing = cached?.find((f) => f.name === session.name && !f.deletedAt)
               if (!existing) {
@@ -98,13 +98,16 @@ export function useUploadFile() {
                 return
               }
               await qc.invalidateQueries({ queryKey: fileKeys.inFolder(session.folderId) })
-              useUploadStore.getState().update(session.id, {
+              const restarted: UploadSession = {
+                ...session,
+                progress: 0,
                 state: 'uploading',
                 error: undefined,
-                progress: 0,
                 fileId: undefined,
-              })
-              void runUpload(session)
+                abort: undefined,
+              }
+              useUploadStore.getState().add(restarted)
+              void runUpload(restarted)
             },
           })
           return
