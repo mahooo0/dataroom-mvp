@@ -125,7 +125,9 @@ async function sweepAbandonedPending(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   ownerId: string,
 ): Promise<string[]> {
-  const cutoff = new Date(Date.now() - PENDING_SWEEP_MAX_AGE_MS)
+  // postgres-js only accepts primitives in `sql` params; a Date instance blows
+  // up in Bind. ISO-string round-trip is safe: timestamptz parses ISO 8601.
+  const cutoffIso = new Date(Date.now() - PENDING_SWEEP_MAX_AGE_MS).toISOString()
   const stale = await tx.execute<{ id: string; s3_key: string }>(sql`
     SELECT f.id, f.s3_key
     FROM files f
@@ -133,7 +135,7 @@ async function sweepAbandonedPending(
     INNER JOIN datarooms d ON d.id = fo.dataroom_id
     WHERE d.owner_id = ${ownerId}
       AND f.status = 'pending'
-      AND f.created_at < ${cutoff}
+      AND f.created_at < ${cutoffIso}::timestamptz
   `)
   const rows = Array.isArray(stale) ? stale : ((stale as unknown as { rows: unknown[] }).rows ?? [])
   if (rows.length === 0) return []

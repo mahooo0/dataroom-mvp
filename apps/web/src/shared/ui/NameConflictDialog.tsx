@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react'
+import { Files } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNameConflictStore } from '@/shared/lib/name-conflict-store'
 import { Button } from './button'
@@ -19,6 +19,12 @@ const ENTITY_LABEL = {
   file: 'file',
 } as const
 
+const ENTITY_LABEL_CAPITALIZED = {
+  dataroom: 'Dataroom',
+  folder: 'Folder',
+  file: 'File',
+} as const
+
 export function NameConflictDialog() {
   const current = useNameConflictStore((s) => s.current)
   const close = useNameConflictStore((s) => s.close)
@@ -35,6 +41,7 @@ export function NameConflictDialog() {
 
   const open = !!current
   const entity = current ? ENTITY_LABEL[current.entity] : 'item'
+  const entityCap = current ? ENTITY_LABEL_CAPITALIZED[current.entity] : 'Item'
   const canReplace = !!current?.onReplace
 
   const onKeepBoth = () => {
@@ -61,15 +68,18 @@ export function NameConflictDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" aria-hidden />
-            Name already used
+            <span className="rounded-md bg-muted p-1.5 text-muted-foreground">
+              <Files className="h-4 w-4" aria-hidden />
+            </span>
+            {entityCap} name already in use
           </DialogTitle>
           <DialogDescription>
-            A {entity} named <span className="font-medium">{current?.attemptedName}</span> already
+            A {entity} named{' '}
+            <span className="font-medium text-foreground">{current?.attemptedName}</span> already
             exists here.
             {canReplace
-              ? ' Replace it, rename this one, or cancel.'
-              : ' Rename this one and keep both, or cancel.'}
+              ? ' Choose a different name, or replace what’s there.'
+              : ' Pick a different name to keep both.'}
           </DialogDescription>
         </DialogHeader>
 
