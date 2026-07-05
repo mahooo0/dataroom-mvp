@@ -52,6 +52,8 @@ export function useRenameDataroom() {
     },
     onError: (err, vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(dataroomKeys.list(), ctx.prev)
+      const cached = qc.getQueryData<Dataroom[]>(dataroomKeys.list()) ?? []
+      const siblings = cached.filter((d) => d.id !== vars.id && !d.deletedAt)
       handleMutationError(
         err,
         'Failed to rename dataroom',
@@ -59,6 +61,7 @@ export function useRenameDataroom() {
           ? {
               entity: 'dataroom',
               attemptedName: vars.name,
+              takenNames: siblings.map((d) => d.name),
               onKeepBoth: (newName) => mutation.mutate({ ...vars, name: newName }),
             }
           : undefined,

@@ -52,9 +52,15 @@ export function useRenameFolder() {
     },
     onError: (err, vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(folderKeys.inDataroom(vars.dataroomId), ctx.prev)
+      const cached = qc.getQueryData<Folder[]>(folderKeys.inDataroom(vars.dataroomId)) ?? []
+      const self = cached.find((f) => f.id === vars.id)
+      const siblings = cached.filter(
+        (f) => f.id !== vars.id && f.parentId === self?.parentId && !f.deletedAt,
+      )
       handleMutationError(err, 'Failed to rename folder', {
         entity: 'folder',
         attemptedName: vars.name,
+        takenNames: siblings.map((f) => f.name),
         onKeepBoth: (newName) => mutation.mutate({ ...vars, name: newName }),
       })
     },

@@ -48,10 +48,12 @@ export function useCreateDataroom() {
     onError: (err, input, ctx) => {
       if (ctx?.prev) qc.setQueryData(dataroomKeys.list(), ctx.prev)
       const cached = qc.getQueryData<Dataroom[]>(dataroomKeys.list()) ?? []
-      const existing = cached.find((d) => d.name === input.name && !d.deletedAt)
+      const alive = cached.filter((d) => !d.deletedAt)
+      const existing = alive.find((d) => d.name === input.name)
       handleMutationError(err, 'Failed to create dataroom', {
         entity: 'dataroom',
         attemptedName: input.name,
+        takenNames: alive.map((d) => d.name),
         onKeepBoth: (newName) => mutation.mutate({ ...input, name: newName }),
         onReplace: existing
           ? async () => {

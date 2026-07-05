@@ -46,9 +46,12 @@ export function useRenameFile() {
     },
     onError: (err, vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(fileKeys.inFolder(vars.folderId), ctx.prev)
+      const cached = qc.getQueryData<FileRecord[]>(fileKeys.inFolder(vars.folderId)) ?? []
+      const siblings = cached.filter((f) => f.id !== vars.id && !f.deletedAt)
       handleMutationError(err, 'Failed to rename file', {
         entity: 'file',
         attemptedName: vars.name,
+        takenNames: siblings.map((f) => f.name),
         onKeepBoth: (newName) => mutation.mutate({ ...vars, name: newName }),
       })
     },

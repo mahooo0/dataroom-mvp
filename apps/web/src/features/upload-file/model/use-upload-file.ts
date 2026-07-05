@@ -77,10 +77,15 @@ export function useUploadFile() {
           // just repeat what the modal already says with an alarming red bar.
           // Drop the row; Keep-both / Replace will re-add a fresh one.
           useUploadStore.getState().remove(session.id)
+          const cachedNames =
+            qc
+              .getQueryData<FileRecord[]>(fileKeys.inFolder(session.folderId))
+              ?.filter((f) => !f.deletedAt)
+              .map((f) => f.name) ?? []
           useNameConflictStore.getState().open({
             entity: 'file',
             attemptedName: session.name,
-            suggestion: suggestNextName(session.name),
+            suggestion: suggestNextName(session.name, cachedNames),
             onKeepBoth: (newName) => {
               const restarted: UploadSession = {
                 ...session,

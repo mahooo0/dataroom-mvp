@@ -56,12 +56,12 @@ export function useCreateFolder() {
     onError: (err, input, ctx) => {
       if (ctx?.prev) qc.setQueryData(folderKeys.inDataroom(input.dataroomId), ctx.prev)
       const cached = qc.getQueryData<Folder[]>(folderKeys.inDataroom(input.dataroomId)) ?? []
-      const existing = cached.find(
-        (f) => f.parentId === input.parentId && f.name === input.name && !f.deletedAt,
-      )
+      const siblings = cached.filter((f) => f.parentId === input.parentId && !f.deletedAt)
+      const existing = siblings.find((f) => f.name === input.name)
       handleMutationError(err, 'Failed to create folder', {
         entity: 'folder',
         attemptedName: input.name,
+        takenNames: siblings.map((f) => f.name),
         onKeepBoth: (newName) => mutation.mutate({ ...input, name: newName }),
         onReplace: existing
           ? async () => {

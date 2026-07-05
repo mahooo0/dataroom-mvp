@@ -8,6 +8,8 @@ const CONFLICT_CODES = new Set(['DATAROOM_NAME_TAKEN', 'FOLDER_NAME_TAKEN', 'FIL
 interface ConflictOpts {
   entity: NameConflictEntity
   attemptedName: string
+  /** Names that already exist in the same scope — used to seed a genuinely free suggestion. */
+  takenNames?: Iterable<string>
   onKeepBoth: (newName: string) => void
   onReplace?: () => void | Promise<void>
 }
@@ -23,7 +25,7 @@ export function handleMutationError(err: unknown, fallback: string, conflict?: C
     useNameConflictStore.getState().open({
       entity: conflict.entity,
       attemptedName: conflict.attemptedName,
-      suggestion: suggestNextName(conflict.attemptedName),
+      suggestion: suggestNextName(conflict.attemptedName, conflict.takenNames),
       onKeepBoth: conflict.onKeepBoth,
       onReplace: conflict.onReplace,
     })
