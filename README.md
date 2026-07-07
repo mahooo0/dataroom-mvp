@@ -8,7 +8,7 @@ Take-home coding challenge for Acme Corp.
 
 | | URL |
 |---|---|
-| Web (Vercel) | **https://web-psi-ten-28.vercel.app/** |
+| Web (Vercel) | **https://dataroom-mvp-sepia.vercel.app** |
 | API (Dokploy) | https://api.dataroom.holy-water.app — `/health` → 200 |
 | MinIO S3 + Console | https://minio.dataroom.holy-water.app |
 
